@@ -24,7 +24,7 @@ $this->title = 'ClaimJury - Система управления исками';
                         <div class="hero-actions">
                             <h3>Привет, <?= Html::encode(Yii::$app->user->identity->username) ?>!</h3>
                             <p>Добро пожаловать в вашу панель управления.</p>
-                            <?= Html::a('Панель управления', ['#'], ['class' => 'btn btn-primary btn-lg']) ?>
+                            <?= Html::a('Панель управления', ['/dashboard'], ['class' => 'btn btn-primary btn-lg']) ?>
                         </div>
                     <?php endif; ?>
                 </div>

@@ -245,6 +245,16 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Gets query for [[Purchases]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPurchases()
+    {
+        return $this->hasMany(Purchase::class, ['user_id' => 'id']);
+    }
+
+    /**
      * Создать пустой профиль для пользователя
      * @return Profile
      */

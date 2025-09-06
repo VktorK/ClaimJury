@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#f8f9fa" stroke="#e9ecef" stroke-width="2" rx="8"/>
+  <text x="50" y="35" font-family="Arial, sans-serif" font-size="12" fill="#6c757d" text-anchor="middle">Нет чека</text>
+  <rect x="30" y="45" width="40" height="25" fill="none" stroke="#6c757d" stroke-width="2" rx="2"/>
+  <line x1="35" y1="50" x2="65" y2="50" stroke="#6c757d" stroke-width="1"/>
+  <line x1="35" y1="55" x2="60" y2="55" stroke="#6c757d" stroke-width="1"/>
+  <line x1="35" y1="60" x2="55" y2="60" stroke="#6c757d" stroke-width="1"/>
+</svg>

@@ -20,6 +20,52 @@ AppAsset::register($this);
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <?php $this->registerCsrfMetaTags() ?>
     <title><?= Html::encode($this->title) ?></title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+    /* Глобальные стили для исправления выпадающих списков */
+    .form-control {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    select.form-control {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23666' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px;
+        padding-right: 35px;
+    }
+
+    select.form-control:focus {
+        background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23667eea' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E");
+    }
+
+    select.form-control option {
+        padding: 8px 12px;
+        font-size: 1rem;
+        line-height: 1.4;
+        color: #333;
+        background: white;
+    }
+
+    select.form-control option:hover {
+        background: #f8f9fa;
+    }
+
+    select.form-control option:checked {
+        background: #667eea;
+        color: white;
+    }
+    </style>
+    
     <?php $this->head() ?>
 </head>
 <body class="d-flex flex-column h-100">
@@ -55,11 +101,12 @@ AppAsset::register($this);
                         ' . Yii::$app->user->identity->username . '
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href="/profile">Мой профиль</a>
-                        <a class="dropdown-item" href="/profile/edit">Редактировать профиль</a>
+                        <a class="dropdown-item" href="/dashboard"><i class="fas fa-tachometer-alt"></i> Панель управления</a>
+                        <a class="dropdown-item" href="/profile"><i class="fas fa-user"></i> Мой профиль</a>
+                        <a class="dropdown-item" href="/profile/edit"><i class="fas fa-edit"></i> Редактировать профиль</a>
                         <div class="dropdown-divider"></div>
                         ' . Html::beginForm(['/auth/logout'], 'post', ['class' => 'form-inline'])
-                        . Html::submitButton('Выйти', ['class' => 'dropdown-item', 'style' => 'border: none; background: none; width: 100%; text-align: left;'])
+                        . Html::submitButton('<i class="fas fa-sign-out-alt"></i> Выйти', ['class' => 'dropdown-item', 'style' => 'border: none; background: none; width: 100%; text-align: left;'])
                         . Html::endForm() . '
                     </div>
                 </li>'
@@ -94,6 +141,10 @@ AppAsset::register($this);
 </footer>
 
 <?php $this->endBody() ?>
+
+<!-- Bootstrap JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
 <?php $this->endPage() ?>
