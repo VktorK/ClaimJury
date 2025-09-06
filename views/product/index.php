@@ -120,7 +120,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'label' => 'ДАТА СОЗДАНИЯ',
                                 'format' => 'raw',
                                 'value' => function ($model) {
-                                    return '<span class="date-created">' . Yii::$app->formatter->asDate($model->created_at) . '</span>';
+                                    return '<span class="date-created">' . $model->getFormattedCreatedDate() . '</span>';
                                 },
                                 'contentOptions' => ['style' => 'vertical-align: middle; text-align: center;'],
                                 'headerOptions' => ['style' => 'width: 140px; text-align: center;'],

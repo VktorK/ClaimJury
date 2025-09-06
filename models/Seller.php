@@ -151,4 +151,30 @@ class Seller extends ActiveRecord
         }
         return $result;
     }
+
+    /**
+     * Get formatted date creation
+     *
+     * @return string
+     */
+    public function getFormattedDateCreation()
+    {
+        if (!$this->date_creation) {
+            return 'Не указана';
+        }
+        
+        $date = new \DateTime($this->date_creation);
+        
+        $months = [
+            1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля',
+            5 => 'мая', 6 => 'июня', 7 => 'июля', 8 => 'августа',
+            9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря'
+        ];
+        
+        $day = $date->format('d');
+        $month = $months[(int)$date->format('n')];
+        $year = $date->format('Y');
+        
+        return $day . ' ' . $month . ' ' . $year . ' года';
+    }
 }

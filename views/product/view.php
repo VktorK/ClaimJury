@@ -54,12 +54,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             
                             <div class="info-item">
                                 <label>Дата создания:</label>
-                                <span><?= Yii::$app->formatter->asDatetime($model->created_at) ?></span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <label>Последнее обновление:</label>
-                                <span><?= Yii::$app->formatter->asDatetime($model->updated_at) ?></span>
+                                <span><?= $model->getFormattedCreatedDate() ?></span>
                             </div>
                             
                             <?php if ($model->description): ?>

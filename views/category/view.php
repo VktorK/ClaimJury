@@ -33,12 +33,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             
                             <div class="info-item">
                                 <label>Дата создания:</label>
-                                <span><?= Yii::$app->formatter->asDatetime($model->created_at) ?></span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <label>Последнее обновление:</label>
-                                <span><?= Yii::$app->formatter->asDatetime($model->updated_at) ?></span>
+                                <span><?= $model->getFormattedCreatedDate() ?></span>
                             </div>
                             
                             <div class="info-item">
@@ -225,7 +220,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                         <div class="product-meta">
                                             <span class="product-date">
                                                 <i class="fas fa-calendar"></i>
-                                                <?= Yii::$app->formatter->asDate($product->created_at) ?>
+                                                <?= $product->getFormattedCreatedDate() ?>
                                             </span>
                                             <?php if ($product->warranty_period): ?>
                                                 <span class="product-warranty">

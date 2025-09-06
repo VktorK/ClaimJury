@@ -133,7 +133,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
                     <div class="detail-item">
                         <label>Дата регистрации:</label>
-                        <span><?= Yii::$app->formatter->asDate($model->user->created_at) ?></span>
+                        <span><?= $model->user->getFormattedCreatedDate() ?></span>
                     </div>
                 </div>
             </div>

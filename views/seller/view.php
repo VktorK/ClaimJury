@@ -60,7 +60,7 @@ $this->params['breadcrumbs'][] = $model->title;
                                 <?php if ($model->date_creation): ?>
                                 <div class="detail-item">
                                     <label>Дата создания организации:</label>
-                                    <span><?= Yii::$app->formatter->asDate($model->date_creation, 'php:d.m.Y') ?></span>
+                                    <span><?= $model->getFormattedDateCreation() ?></span>
                                 </div>
                                 <?php endif; ?>
                             </div>
@@ -78,7 +78,7 @@ $this->params['breadcrumbs'][] = $model->title;
                                     <div class="stat-label">Общая сумма</div>
                                 </div>
                                 <div class="stat-item">
-                                    <div class="stat-number"><?= $model->date_creation ? Yii::$app->formatter->asDate($model->date_creation, 'php:Y') : '—' ?></div>
+                                    <div class="stat-number"><?= $model->date_creation ? date('Y', strtotime($model->date_creation)) : '—' ?></div>
                                     <div class="stat-label">Год основания</div>
                                 </div>
                             </div>

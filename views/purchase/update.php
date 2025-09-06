@@ -194,12 +194,8 @@ $this->params['breadcrumbs'][] = 'Редактировать';
             
             <div class="purchase-meta">
                 <div class="meta-item">
-                    <label>Создано:</label>
-                    <span><?= Yii::$app->formatter->asDatetime($model->created_at) ?></span>
-                </div>
-                <div class="meta-item">
-                    <label>Последнее обновление:</label>
-                    <span><?= Yii::$app->formatter->asDatetime($model->updated_at) ?></span>
+                    <label>Дата создания покупки:</label>
+                    <span><?= $model->getFormattedCreatedDate() ?></span>
                 </div>
             </div>
         </div>
