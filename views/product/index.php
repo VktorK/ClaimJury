@@ -10,25 +10,32 @@ use app\models\Product;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 $this->title = 'Товары';
+$this->params['breadcrumbs'][] = ['label' => 'Панель управления - Покупки', 'url' => ['/purchases']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
 <div class="product-index">
     <div class="row">
         <div class="col-12">
-            <div class="index-card">
-                <div class="card-header">
-                    <div class="header-top">
-                        <?= Html::a('<i class="fas fa-shopping-cart"></i> Мои покупки', ['/purchase/index'], [
-                            'class' => 'btn btn-outline-light btn-sm back-btn'
-                        ]) ?>
-                    </div>
-                    <h2>
-                        <i class="fas fa-box"></i>
-                        Мои товары
-                    </h2>
-                </div>
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">
+                    <i class="fas fa-box"></i>
+                    Мои товары
+                </h1>
+                <p class="dashboard-subtitle">Управляйте своими товарами и категориями</p>
                 
+                <div class="dashboard-navigation">
+                    <?= Html::a('<i class="fas fa-shopping-cart"></i> Покупки', ['/purchase/index'], [
+                        'class' => 'btn btn-outline-primary dashboard-nav-btn'
+                    ]) ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="product-table-card">
                 <div class="card-body">
                     <?php Pjax::begin(); ?>
                     
@@ -183,51 +190,85 @@ $this->params['breadcrumbs'][] = $this->title;
     padding: 20px 0;
 }
 
-.index-card {
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+    position: relative;
+}
+
+.dashboard-navigation {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}
+
+.dashboard-nav-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    min-width: 160px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.dashboard-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    text-decoration: none;
+}
+
+.dashboard-nav-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dashboard-nav-btn i {
+    font-size: 1.1rem;
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.dashboard-title i {
+    margin-right: 15px;
+}
+
+.dashboard-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.product-table-card {
     background: white;
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     margin-bottom: 20px;
     overflow: hidden;
-}
-
-.card-header {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    color: white;
-    padding: 25px 30px;
-    position: relative;
-}
-
-.header-top {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-}
-
-.back-btn {
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    background: transparent;
-    transition: all 0.3s ease;
-}
-
-.back-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.6);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-}
-
-.card-header h2,
-.card-header h3 {
-    margin: 0;
-    font-weight: 600;
-}
-
-.card-header h2 i,
-.card-header h3 i {
-    margin-right: 10px;
 }
 
 .card-actions {
@@ -548,15 +589,21 @@ $this->params['breadcrumbs'][] = $this->title;
 }
 
 @media (max-width: 768px) {
-    .card-header {
-        padding: 20px 15px;
-        text-align: center;
+    .dashboard-title {
+        font-size: 2rem;
     }
     
-    .header-top {
-        position: static;
-        margin-bottom: 15px;
-        text-align: center;
+    .dashboard-navigation {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    
+    .dashboard-nav-btn {
+        min-width: 140px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
     }
     
     .card-body {

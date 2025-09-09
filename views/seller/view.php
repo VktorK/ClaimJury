@@ -8,8 +8,8 @@ use app\models\Seller;
 /* @var $model app\models\Seller */
 
 $this->title = 'Карточка продавца: ' . $model->title;
-$this->params['breadcrumbs'][] = ['label' => 'Панель управления', 'url' => ['/dashboard']];
-$this->params['breadcrumbs'][] = ['label' => 'Продавцы', 'url' => ['/sellers']];
+$this->params['breadcrumbs'][] = ['label' => 'Главная', 'url' => ['/purchases']];
+$this->params['breadcrumbs'][] = ['label' => 'Продавцы', 'url' => ['/seller/index']];
 $this->params['breadcrumbs'][] = $model->title;
 ?>
 
@@ -186,8 +186,9 @@ $this->params['breadcrumbs'][] = $model->title;
 
 .card-actions {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .card-body {
@@ -320,6 +321,83 @@ $this->params['breadcrumbs'][] = $model->title;
     font-size: 0.9rem;
 }
 
+/* Специальные стили для кнопок в card-actions */
+.card-actions .btn {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border: 2px solid;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    min-width: 140px;
+    justify-content: center;
+}
+
+.card-actions .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    text-decoration: none;
+}
+
+.card-actions .btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.card-actions .btn-outline-primary {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-color: rgba(255,255,255,0.3);
+    backdrop-filter: blur(10px);
+}
+
+.card-actions .btn-outline-primary:hover {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-color: rgba(255,255,255,0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255,255,255,0.2);
+}
+
+.card-actions .btn-outline-secondary {
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.9);
+    border-color: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+}
+
+.card-actions .btn-outline-secondary:hover {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border-color: rgba(255,255,255,0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255,255,255,0.15);
+}
+
+.card-actions .btn i {
+    font-size: 1rem;
+    margin-right: 8px;
+}
+
+/* Анимация для кнопок */
+.card-actions .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.card-actions .btn:hover::before {
+    left: 100%;
+}
+
 @media (max-width: 768px) {
     .card-header {
         flex-direction: column;
@@ -333,6 +411,12 @@ $this->params['breadcrumbs'][] = $model->title;
     
     .card-actions {
         justify-content: center;
+    }
+    
+    .card-actions .btn {
+        min-width: 120px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
     }
     
     .detail-grid {

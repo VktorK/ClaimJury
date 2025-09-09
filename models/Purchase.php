@@ -17,6 +17,7 @@ use yii\helpers\FileHelper;
  * @property string $seller_name
  * @property int|null $seller_id
  * @property int|null $product_id
+ * @property int|null $buyer_id
  * @property string $purchase_date
  * @property float $amount
  * @property string $currency
@@ -30,6 +31,7 @@ use yii\helpers\FileHelper;
  * @property User $user
  * @property Seller|null $seller
  * @property Product|null $product
+ * @property Buyer|null $buyer
  */
 class Purchase extends ActiveRecord
 {
@@ -103,7 +105,7 @@ class Purchase extends ActiveRecord
     {
         return [
             [['user_id', 'purchase_date', 'amount'], 'required'],
-            [['user_id', 'seller_id', 'product_id', 'warranty_period', 'created_at', 'updated_at'], 'integer'],
+            [['user_id', 'seller_id', 'product_id', 'buyer_id', 'warranty_period', 'created_at', 'updated_at'], 'integer'],
             [['purchase_date', 'appeal_deadline'], 'safe'],
             [['amount'], 'number', 'min' => 0],
             [['product_name', 'seller_name'], 'string', 'max' => 255],
@@ -114,7 +116,9 @@ class Purchase extends ActiveRecord
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
             [['seller_id'], 'exist', 'skipOnError' => true, 'targetClass' => Seller::class, 'targetAttribute' => ['seller_id' => 'id']],
             [['product_id'], 'exist', 'skipOnError' => true, 'targetClass' => Product::class, 'targetAttribute' => ['product_id' => 'id']],
+            [['buyer_id'], 'exist', 'skipOnError' => true, 'targetClass' => Buyer::class, 'targetAttribute' => ['buyer_id' => 'id']],
             [['seller_id'], 'required', 'message' => 'Необходимо выбрать продавца'],
+            [['buyer_id'], 'required', 'message' => 'Необходимо выбрать покупателя'],
         ];
     }
 
@@ -130,6 +134,7 @@ class Purchase extends ActiveRecord
             'seller_name' => 'Продавец (текст)',
             'seller_id' => 'Продавец',
             'product_id' => 'Товар',
+            'buyer_id' => 'Покупатель',
             'purchase_date' => 'Дата покупки',
             'amount' => 'Сумма',
             'currency' => 'Валюта',
@@ -170,6 +175,26 @@ class Purchase extends ActiveRecord
     public function getProduct()
     {
         return $this->hasOne(Product::class, ['id' => 'product_id']);
+    }
+
+    /**
+     * Gets query for [[Buyer]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getBuyer()
+    {
+        return $this->hasOne(Buyer::class, ['id' => 'buyer_id']);
+    }
+
+    /**
+     * Gets query for [[Claims]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getClaims()
+    {
+        return $this->hasMany(Claim::class, ['purchase_id' => 'id']);
     }
 
     /**
@@ -412,6 +437,16 @@ class Purchase extends ActiveRecord
     }
 
     /**
+     * Get buyers dropdown
+     *
+     * @return array
+     */
+    public static function getBuyersDropdown()
+    {
+        return Buyer::getBuyersDropdown();
+    }
+
+    /**
      * Get product name (from relation)
      *
      * @return string
@@ -422,5 +457,18 @@ class Purchase extends ActiveRecord
             return $this->product->title;
         }
         return $this->product_name ?: 'Не указан';
+    }
+
+    /**
+     * Get buyer name (from relation)
+     *
+     * @return string
+     */
+    public function getBuyerName()
+    {
+        if ($this->buyer) {
+            return $this->buyer->getFullName();
+        }
+        return 'Не указан';
     }
 }

@@ -103,7 +103,7 @@ class PurchaseController extends Controller
 
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', 'Покупка успешно добавлена.');
-                return $this->redirect(['view', 'id' => $model->id]);
+                return $this->redirect(['index']);
             } else {
                 Yii::$app->session->setFlash('error', 'Ошибка при добавлении покупки.');
             }

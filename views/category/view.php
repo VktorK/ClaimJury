@@ -8,7 +8,8 @@ use app\models\Category;
 /* @var $model app\models\Category */
 
 $this->title = 'Просмотр категории';
-$this->params['breadcrumbs'][] = ['label' => 'Категории', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Главная', 'url' => ['/purchases']];
+$this->params['breadcrumbs'][] = ['label' => 'Категории', 'url' => ['/category/index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
@@ -190,9 +191,17 @@ $this->params['breadcrumbs'][] = $this->title;
                     
                     <div class="stat-item">
                         <label>Общая сумма покупок:</label>
-                        <span><?= number_format(array_sum(array_map(function($product) { 
-                            return array_sum(array_column($product->purchases, 'amount')); 
-                        }, $model->products)), 0, ',', ' ') ?> р</span>
+                        <span><?php 
+                            $totalAmount = 0;
+                            foreach ($model->products as $product) {
+                                foreach ($product->purchases as $purchase) {
+                                    if (is_numeric($purchase->amount)) {
+                                        $totalAmount += (float)$purchase->amount;
+                                    }
+                                }
+                            }
+                            echo number_format($totalAmount, 0, ',', ' ') . ' р';
+                        ?></span>
                     </div>
                 <?php endif; ?>
             </div>

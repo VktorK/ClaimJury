@@ -11,7 +11,7 @@ use app\models\Purchase;
 /* @var $totalAmount float */
 /* @var $purchasesCount int */
 
-$this->title = 'Панель управления - Мои покупки';
+$this->title = 'Покупки';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
@@ -19,22 +19,26 @@ $this->params['breadcrumbs'][] = $this->title;
     <div class="row">
         <div class="col-12">
             <div class="dashboard-header">
-                <div class="dashboard-header-top">
-                    <?= Html::a('<i class="fas fa-tachometer-alt"></i> Панель управления', ['/dashboard'], [
-                        'class' => 'btn btn-outline-primary btn-sm dashboard-back-btn'
-                    ]) ?>
-                    <?= Html::a('<i class="fas fa-store"></i> Продавцы', ['/seller/index'], [
-                        'class' => 'btn btn-outline-primary btn-sm dashboard-back-btn'
-                    ]) ?>
-                    <?= Html::a('<i class="fas fa-box"></i> Мои товары', ['/product/index'], [
-                        'class' => 'btn btn-outline-primary btn-sm dashboard-back-btn'
-                    ]) ?>
-                </div>
                 <h1 class="dashboard-title">
                     <i class="fas fa-shopping-cart"></i>
-                    Мои покупки
+                    Покупки
                 </h1>
                 <p class="dashboard-subtitle">Управляйте своими покупками и чеками</p>
+                
+                <div class="dashboard-navigation">
+                    <?= Html::a('<i class="fas fa-tachometer-alt"></i> Панель управления', ['/dashboard'], [
+                        'class' => 'btn btn-outline-primary dashboard-nav-btn'
+                    ]) ?>
+                    <?= Html::a('<i class="fas fa-store"></i> Продавцы', ['/seller/index'], [
+                        'class' => 'btn btn-outline-primary dashboard-nav-btn'
+                    ]) ?>
+                    <?= Html::a('<i class="fas fa-user"></i> Покупатели', ['/buyer/index'], [
+                        'class' => 'btn btn-outline-primary dashboard-nav-btn'
+                    ]) ?>
+                    <?= Html::a('<i class="fas fa-box"></i> Мои товары', ['/product/index'], [
+                        'class' => 'btn btn-outline-primary dashboard-nav-btn'
+                    ]) ?>
+                </div>
             </div>
         </div>
     </div>
@@ -81,7 +85,7 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="col-12">
             <div class="purchases-card">
                 <div class="card-header">
-                    <h3>Мои покупки</h3>
+                    <h3>Покупки</h3>
                     <div class="card-actions">
                         <?= Html::a('<i class="fas fa-plus"></i> Добавить покупку', ['create'], ['class' => 'btn btn-primary']) ?>
                     </div>
@@ -127,6 +131,21 @@ $this->params['breadcrumbs'][] = $this->title;
                                         );
                                     }
                                     return Html::encode($model->getSellerName());
+                                },
+                            ],
+                            [
+                                'attribute' => 'buyer_id',
+                                'label' => 'Покупатель',
+                                'format' => 'raw',
+                                'value' => function ($model) {
+                                    if ($model->buyer_id) {
+                                        return Html::a(
+                                            Html::encode($model->getBuyerName()),
+                                            ['/buyer/view', 'id' => $model->buyer_id],
+                                            ['class' => 'buyer-name-link']
+                                        );
+                                    }
+                                    return Html::encode($model->getBuyerName());
                                 },
                             ],
                             [
@@ -187,6 +206,34 @@ $this->params['breadcrumbs'][] = $this->title;
                                 },
                             ],
                             [
+                                'label' => 'Претензии',
+                                'format' => 'raw',
+                                'value' => function ($model) {
+                                    $claimsCount = $model->getClaims()->count();
+                                    if ($claimsCount > 0) {
+                                        return Html::button(
+                                            '<i class="fas fa-exclamation-triangle"></i> ' . $claimsCount,
+                                            [
+                                                'class' => 'btn btn-sm btn-warning claims-link',
+                                                'title' => 'Просмотреть претензии по этой покупке',
+                                                'onclick' => 'openClaimsModal(' . $model->id . ')'
+                                            ]
+                                        );
+                                    } else {
+                                        return Html::a(
+                                            '<i class="fas fa-plus"></i> Создать',
+                                            ['/claim/create', 'Claim[purchase_id]' => $model->id],
+                                            [
+                                                'class' => 'btn btn-sm btn-outline-success claims-create-link',
+                                                'title' => 'Создать претензию по этой покупке'
+                                            ]
+                                        );
+                                    }
+                                },
+                                'headerOptions' => ['style' => 'width: 120px; text-align: center;'],
+                                'contentOptions' => ['style' => 'text-align: center;'],
+                            ],
+                            [
                                 'class' => 'yii\grid\ActionColumn',
                                 'template' => '<div class="btn-group">{view} {update} {delete}</div>',
                                 'header' => 'Действия',
@@ -231,6 +278,8 @@ $this->params['breadcrumbs'][] = $this->title;
                                 ],
                             ],
                         ],
+                        'emptyText' => 'Данные отсутствуют',
+                        'emptyTextOptions' => ['class' => 'text-center text-muted py-4'],
                     ]); ?>
                     
                     <?php Pjax::end(); ?>
@@ -263,6 +312,29 @@ $this->params['breadcrumbs'][] = $this->title;
     </div>
 </div>
 
+<!-- Модальное окно для просмотра претензий -->
+<div class="modal fade" id="claimsModal" tabindex="-1" aria-labelledby="claimsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #ff6b35, #f7931e); color: white; border-radius: 10px 10px 0 0;">
+                <h5 class="modal-title" id="claimsModalLabel">Претензии</h5>
+                <button type="button" class="btn-close" onclick="closeClaimsModal()" aria-label="Закрыть" style="color: white;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                <!-- Контент будет загружен через AJAX -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeClaimsModal()">Закрыть</button>
+                <button type="button" class="btn btn-success" onclick="createClaim()">
+                    <i class="fas fa-plus"></i> Создать претензию
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .purchase-index {
     padding: 20px 0;
@@ -278,29 +350,67 @@ $this->params['breadcrumbs'][] = $this->title;
     position: relative;
 }
 
-.dashboard-header-top {
-    position: absolute;
-    top: 20px;
-    left: 20px;
+.dashboard-navigation {
     display: flex;
-    gap: 10px;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+    flex-wrap: wrap;
 }
 
-.dashboard-back-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+.dashboard-nav-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.4);
     color: white;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-size: 0.9rem;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
     transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    min-width: 160px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-.dashboard-back-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
+.dashboard-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
     color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    text-decoration: none;
+}
+
+.dashboard-nav-btn:active {
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dashboard-nav-btn i {
+    font-size: 1.1rem;
+}
+
+/* Анимация блика для кнопок навигации */
+.dashboard-nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.6s;
+}
+
+.dashboard-nav-btn:hover::before {
+    left: 100%;
 }
 
 .dashboard-title {
@@ -396,22 +506,25 @@ $this->params['breadcrumbs'][] = $this->title;
 .table th {
     background: #f8f9fa;
     border: none;
-    padding: 15px;
+    padding: 12px 8px;
     font-weight: 600;
     color: #555;
+    font-size: 0.85rem;
 }
 
 .table td {
-    padding: 15px;
+    padding: 12px 8px;
     border: none;
     border-bottom: 1px solid #f8f9fa;
     vertical-align: middle;
+    font-size: 0.85rem;
 }
 
 .product-link {
     color: #667eea;
     text-decoration: none;
     font-weight: 500;
+    font-size: 0.85rem;
 }
 
 .product-link:hover {
@@ -422,18 +535,19 @@ $this->params['breadcrumbs'][] = $this->title;
 .amount {
     font-weight: 600;
     color: #28a745;
+    font-size: 0.85rem;
 }
 
 .warranty-period {
     font-weight: 500;
     color: #17a2b8;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .appeal-deadline {
     font-weight: 500;
     color: #28a745;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .appeal-deadline.expired {
@@ -520,17 +634,17 @@ $this->params['breadcrumbs'][] = $this->title;
         font-size: 2rem;
     }
     
-    .dashboard-header-top {
-        position: static;
-        margin-bottom: 20px;
+    .dashboard-navigation {
         flex-direction: column;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
+        margin-top: 20px;
     }
     
-    .dashboard-back-btn {
-        font-size: 0.8rem;
-        padding: 6px 12px;
+    .dashboard-nav-btn {
+        min-width: 140px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
     }
     
     .stat-card {
@@ -674,6 +788,7 @@ $this->params['breadcrumbs'][] = $this->title;
     display: inline-flex;
     align-items: center;
     gap: 3px;
+    font-size: 0.85rem;
 }
 
 .seller-name-link:hover {
@@ -718,6 +833,135 @@ $this->params['breadcrumbs'][] = $this->title;
     font-weight: 900;
     font-size: 0.7rem;
     opacity: 0.7;
+}
+
+.buyer-name-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.85rem;
+}
+
+.buyer-name-link:hover {
+    color: #764ba2;
+    background: #f8f9fa;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
+}
+
+.buyer-name-link::after {
+    content: '\f35d';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-left: 3px;
+}
+
+/* Стили для кнопок претензий */
+.claims-link {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    font-size: 0.8rem !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
+}
+
+.claims-link:hover {
+    background: linear-gradient(135deg, #d97706, #b45309) !important;
+    color: white !important;
+    text-decoration: none !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4) !important;
+}
+
+.claims-create-link {
+    background: linear-gradient(135deg, #10B981, #059669) !important;
+    border: 1px solid #059669 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    font-size: 0.8rem !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+.claims-create-link:hover {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+    border-color: #047857 !important;
+    color: white !important;
+    text-decoration: none !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Стили для модального окна претензий */
+#claimsModal .modal-content {
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: none;
+}
+
+#claimsModal .modal-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+#claimsModal .modal-body {
+    padding: 1.5rem;
+}
+
+#claimsModal .modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+#claimsModal .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    opacity: 0.8;
+}
+
+#claimsModal .btn-close:hover {
+    opacity: 1;
+}
+
+.claims-link {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
+}
+
+.claims-link:hover {
+    background: linear-gradient(135deg, #d97706, #b45309) !important;
+    color: white !important;
+    text-decoration: none !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4) !important;
 }
 </style>
 
@@ -856,6 +1100,69 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeReceiptModal();
+        closeClaimsModal();
     }
 });
+
+// Функции для модального окна претензий
+function openClaimsModal(purchaseId) {
+    const modal = document.getElementById('claimsModal');
+    if (modal) {
+        // Сохраняем ID покупки в глобальной переменной
+        window.currentPurchaseId = purchaseId;
+        modal.style.display = 'block';
+        modal.classList.add('show');
+        document.body.classList.add('modal-open');
+        loadClaims(purchaseId);
+    }
+}
+
+function closeClaimsModal() {
+    const modal = document.getElementById('claimsModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+    }
+}
+
+function loadClaims(purchaseId) {
+    const modalBody = document.querySelector('#claimsModal .modal-body');
+    const modalTitle = document.querySelector('#claimsModal .modal-title');
+    
+    if (modalTitle) {
+        modalTitle.textContent = 'Претензии по покупке #' + purchaseId;
+    }
+    
+    if (modalBody) {
+        modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Загрузка...</span></div><p class="mt-2">Загрузка претензий...</p></div>';
+        
+        fetch('/claim/index?ajax=1&ClaimSearch[purchase_id]=' + purchaseId)
+            .then(response => response.text())
+            .then(html => {
+                // Парсим HTML и извлекаем только таблицу
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const table = doc.querySelector('.grid-view');
+                
+                if (table) {
+                    modalBody.innerHTML = table.outerHTML;
+                } else {
+                    modalBody.innerHTML = '<div class="text-center text-muted"><p>Данные отсутствуют</p></div>';
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки претензий:', error);
+                modalBody.innerHTML = '<div class="text-center text-danger"><p>Ошибка загрузки претензий</p></div>';
+            });
+    }
+}
+
+function createClaim() {
+    // Получаем ID покупки из глобальной переменной или из контекста
+    const purchaseId = window.currentPurchaseId;
+    if (purchaseId) {
+        window.location.href = '/claim/create?Claim[purchase_id]=' + purchaseId;
+    }
+}
 </script>

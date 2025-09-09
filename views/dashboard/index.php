@@ -28,14 +28,14 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
 
-    <!-- Основной блок МОИ ПОКУПКИ -->
+    <!-- Основные блоки -->
     <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10">
+        <div class="col-lg-5 col-md-6 mb-4">
             <div class="card dashboard-main-block">
                 <div class="card-header">
                     <h5 class="card-title">
                         <i class="fas fa-shopping-cart"></i>
-                        МОИ ПОКУПКИ
+                        ПОКУПКИ
                     </h5>
                 </div>
                 <div class="card-body text-center">
@@ -50,6 +50,33 @@ $this->params['breadcrumbs'][] = $this->title;
                     <div class="dashboard-actions">
                         <?= Html::a('Перейти к покупкам', ['/purchase/index'], [
                             'class' => 'btn btn-primary btn-lg',
+                            'style' => 'width: 100%; max-width: 300px;'
+                        ]) ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-5 col-md-6 mb-4">
+            <div class="card dashboard-main-block">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        ПРЕТЕНЗИИ
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h4 class="dashboard-block-title">Управление претензиями</h4>
+                    <p class="dashboard-block-text">
+                        Создавайте и отслеживайте претензии по вашим покупкам. 
+                        Управляйте процессом возврата товаров и получения компенсаций.
+                    </p>
+                    <div class="dashboard-actions">
+                        <?= Html::a('Перейти к претензиям', ['/claim/index'], [
+                            'class' => 'btn btn-warning btn-lg',
                             'style' => 'width: 100%; max-width: 300px;'
                         ]) ?>
                     </div>
@@ -107,6 +134,10 @@ $this->params['breadcrumbs'][] = $this->title;
     padding: 25px;
 }
 
+.dashboard-main-block:nth-child(2) .card-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
 .dashboard-main-block .card-title {
     margin-bottom: 0;
     font-weight: 700;
@@ -132,6 +163,11 @@ $this->params['breadcrumbs'][] = $this->title;
     justify-content: center;
     margin: 0 auto 25px;
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.dashboard-main-block:nth-child(2) .dashboard-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
 }
 
 .dashboard-icon i {

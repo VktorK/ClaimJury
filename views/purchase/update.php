@@ -76,8 +76,29 @@ $this->params['breadcrumbs'][] = 'Редактировать';
                                     )->label(false) ?>
                                     
                                     <div class="seller-actions mt-2">
-                                        <button type="button" class="btn btn-outline-primary btn-sm" id="add-seller-btn">
+                                        <button type="button" class="btn btn-primary" id="add-seller-btn">
                                             <i class="fas fa-plus"></i> Добавить нового продавца
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Покупатель</label>
+                                <div class="buyer-selection">
+                                    <?= $form->field($model, 'buyer_id')->dropDownList(
+                                        Purchase::getBuyersDropdown(),
+                                        [
+                                            'prompt' => 'Выберите покупателя',
+                                            'id' => 'buyer-dropdown',
+                                            'class' => 'form-control'
+                                        ]
+                                    )->label(false) ?>
+                                    
+                                    <div class="buyer-actions mt-2">
+                                        <button type="button" class="btn btn-primary" id="add-buyer-btn">
+                                            <i class="fas fa-plus"></i> Добавить нового покупателя
                                         </button>
                                     </div>
                                 </div>
@@ -105,7 +126,6 @@ $this->params['breadcrumbs'][] = 'Редактировать';
                                 <label class="form-label">Валюта</label>
                                 <div class="currency-display">
                                     <span class="currency-symbol">₽</span>
-                                    <span class="currency-text">Российский рубль</span>
                                 </div>
                                 <?= $form->field($model, 'currency')->hiddenInput(['value' => 'RUB'])->label(false) ?>
                             </div>
@@ -181,6 +201,11 @@ $this->params['breadcrumbs'][] = 'Редактировать';
                     </div>
                     
                     <div class="help-item">
+                        <h4>Покупатель</h4>
+                        <p>Обязательное поле. Укажите физическое лицо, для которого совершается покупка.</p>
+                    </div>
+                    
+                    <div class="help-item">
                         <h4>Замена чека</h4>
                         <p>Если у вас есть новый чек, загрузите его. Старый чек будет автоматически удален.</p>
                     </div>
@@ -235,6 +260,76 @@ $this->params['breadcrumbs'][] = 'Редактировать';
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeSellerModal()">Отмена</button>
                 <button type="button" class="btn btn-primary" onclick="saveSeller()">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для создания нового покупателя -->
+<div class="modal fade" id="buyerModal" tabindex="-1" aria-labelledby="buyerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="buyerModalLabel">Добавить нового покупателя</h5>
+                <button type="button" class="btn-close" onclick="closeBuyerModal()" aria-label="Закрыть">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="buyer-form" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="buyer-lastName">Фамилия *</label>
+                                <input type="text" class="form-control" id="buyer-lastName" name="Buyer[lastName]" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="buyer-firstName">Имя *</label>
+                                <input type="text" class="form-control" id="buyer-firstName" name="Buyer[firstName]" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="buyer-middleName">Отчество *</label>
+                                <input type="text" class="form-control" id="buyer-middleName" name="Buyer[middleName]" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="buyer-address">Адрес</label>
+                        <textarea class="form-control" id="buyer-address" name="Buyer[address]" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="buyer-birthday">Дата рождения</label>
+                                <input type="date" class="form-control" id="buyer-birthday" name="Buyer[birthday]">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="buyer-passport">Паспорт</label>
+                                <input type="text" class="form-control" id="buyer-passport" name="Buyer[passport]" placeholder="1234 567890">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="buyer-image">Фотография паспорта</label>
+                        <input type="file" class="form-control" id="buyer-image" name="Buyer[image]" accept="image/*">
+                        <small class="form-text text-muted">Поддерживаются форматы: JPG, PNG, GIF</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeBuyerModal()">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveBuyer()">
                     <i class="fas fa-save"></i> Сохранить
                 </button>
             </div>
@@ -361,6 +456,8 @@ $this->params['breadcrumbs'][] = 'Редактировать';
     border-radius: 8px;
     padding: 12px 15px;
     font-size: 1rem;
+    height: 48px;
+    box-sizing: border-box;
     transition: all 0.3s ease;
 }
 
@@ -493,6 +590,7 @@ $this->params['breadcrumbs'][] = 'Редактировать';
 }
 
 .seller-actions .btn,
+.buyer-actions .btn,
 .product-actions .btn {
     font-size: 0.85rem;
     padding: 6px 12px;
@@ -575,23 +673,35 @@ $this->params['breadcrumbs'][] = 'Редактировать';
 .currency-display {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
     padding: 12px 15px;
     background: #f8f9fa;
     border: 2px solid #e9ecef;
     border-radius: 8px;
     font-size: 1rem;
+    height: 48px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.currency-display:hover {
+    border-color: #667eea;
+    background: #f0f2ff;
 }
 
 .currency-symbol {
-    font-size: 1.5rem;
+    font-size: 2.2rem;
     font-weight: bold;
     color: #28a745;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .currency-text {
-    color: #666;
-    font-weight: 500;
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
 }
 
 /* Исправление шрифтов в выпадающих списках */
@@ -840,6 +950,14 @@ document.addEventListener('DOMContentLoaded', function() {
         openSellerModal();
     });
 
+    // Buyer management
+    const addBuyerBtn = document.getElementById('add-buyer-btn');
+    const buyerDropdown = document.getElementById('buyer-dropdown');
+
+    addBuyerBtn.addEventListener('click', function() {
+        openBuyerModal();
+    });
+
     // Product management
     const addProductBtn = document.getElementById('add-product-btn');
     const changeProductBtn = document.getElementById('change-product-btn');
@@ -971,6 +1089,108 @@ function saveSeller() {
     .catch(error => {
         console.error('Error:', error);
         showNotification('Ошибка при создании продавца', 'error');
+    })
+    .finally(() => {
+        // Restore button
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Buyer modal functions
+function openBuyerModal() {
+    const modal = document.getElementById('buyerModal');
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    document.body.classList.add('modal-open');
+    
+    // Add backdrop
+    const existingBackdrop = document.getElementById('buyerModalBackdrop');
+    if (existingBackdrop) {
+        existingBackdrop.remove();
+    }
+    
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.id = 'buyerModalBackdrop';
+    backdrop.style.position = 'fixed';
+    backdrop.style.top = '0';
+    backdrop.style.left = '0';
+    backdrop.style.width = '100%';
+    backdrop.style.height = '100%';
+    backdrop.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    backdrop.style.zIndex = '1040';
+    document.body.appendChild(backdrop);
+    
+    // Close on backdrop click
+    backdrop.addEventListener('click', closeBuyerModal);
+}
+
+function closeBuyerModal() {
+    const modal = document.getElementById('buyerModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.classList.remove('modal-open');
+    
+    // Remove backdrop
+    const backdrop = document.getElementById('buyerModalBackdrop');
+    if (backdrop) {
+        backdrop.remove();
+    }
+    
+    // Clear form
+    document.getElementById('buyer-form').reset();
+}
+
+function saveBuyer() {
+    const form = document.getElementById('buyer-form');
+    const formData = new FormData(form);
+    
+    // Добавляем CSRF-токен
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    formData.append('_csrf', csrfToken);
+    
+    // Добавляем purchases_id
+    const purchaseId = document.getElementById('purchase-id-input');
+    if (purchaseId && purchaseId.value) {
+        formData.append('purchases_id', purchaseId.value);
+    }
+    
+    // Show loading
+    const saveBtn = document.querySelector('#buyerModal .btn-primary');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+    saveBtn.disabled = true;
+    
+    fetch('/buyer/create-ajax', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add new buyer to dropdown
+            const dropdown = document.getElementById('buyer-dropdown');
+            const option = document.createElement('option');
+            option.value = data.id;
+            option.textContent = data.fullName;
+            dropdown.appendChild(option);
+            
+            // Select the new buyer
+            dropdown.value = data.id;
+            
+            // Close modal
+            closeBuyerModal();
+            
+            // Show success message
+            showNotification('Покупатель успешно добавлен!', 'success');
+        } else {
+            showNotification('Ошибка при создании покупателя: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при создании покупателя', 'error');
     })
     .finally(() => {
         // Restore button
@@ -1158,6 +1378,7 @@ function loadCategories() {
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeSellerModal();
+        closeBuyerModal();
         closeProductModal();
     }
 });

@@ -10,6 +10,7 @@ use app\models\Seller;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 $this->title = 'Продавцы';
+$this->params['breadcrumbs'][] = ['label' => 'Главная', 'url' => ['/purchases']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
@@ -19,7 +20,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <div class="index-card">
                 <div class="card-header">
                     <div class="header-top">
-                        <?= Html::a('<i class="fas fa-shopping-cart"></i> Мои покупки', ['/purchase/index'], [
+                        <?= Html::a('<i class="fas fa-shopping-cart"></i> Покупки', ['/purchase/index'], [
                             'class' => 'btn btn-outline-light btn-sm back-btn'
                         ]) ?>
                     </div>

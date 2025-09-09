@@ -8,7 +8,8 @@ use yii\widgets\ActiveForm;
 /* @var $form yii\widgets\ActiveForm */
 
 $this->title = 'Редактирование товара';
-$this->params['breadcrumbs'][] = ['label' => 'Товары', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Панель управления - Покупки', 'url' => ['/purchases']];
+$this->params['breadcrumbs'][] = ['label' => 'Товары', 'url' => ['/product/index']];
 $this->params['breadcrumbs'][] = ['label' => $model->title, 'url' => ['view', 'id' => $model->id]];
 $this->params['breadcrumbs'][] = 'Редактирование';
 ?>

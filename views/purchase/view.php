@@ -66,6 +66,21 @@ $this->params['breadcrumbs'][] = $this->title;
                             </div>
                             
                             <div class="info-item">
+                                <label>Покупатель:</label>
+                                <?php if ($model->buyer_id): ?>
+                                    <span class="buyer-link">
+                                        <?= Html::a(
+                                            Html::encode($model->getBuyerName()),
+                                            ['/buyer/view', 'id' => $model->buyer_id],
+                                            ['class' => 'buyer-name-link']
+                                        ) ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span><?= Html::encode($model->getBuyerName()) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div class="info-item">
                                 <label>Дата покупки:</label>
                                 <span><?= $model->getFormattedPurchaseDate() ?></span>
                             </div>

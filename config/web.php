@@ -71,6 +71,12 @@ $config = [
                 'product/delete/<id:\d+>' => 'product/delete',
                 'product/create-ajax' => 'product/create-ajax',
                 'product/get-by-category' => 'product/get-products-by-category',
+                'buyers' => 'buyer/index',
+                'buyer/create' => 'buyer/create',
+                'buyer/view/<id:\d+>' => 'buyer/view',
+                'buyer/update/<id:\d+>' => 'buyer/update',
+                'buyer/delete/<id:\d+>' => 'buyer/delete',
+                'buyer/create-ajax' => 'buyer/create-ajax',
             ],
         ],
         'log' => [
