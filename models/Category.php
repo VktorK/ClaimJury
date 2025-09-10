@@ -5,25 +5,32 @@ namespace app\models;
 use Yii;
 use yii\db\ActiveRecord;
 use yii\behaviors\TimestampBehavior;
+use yii\helpers\Url;
 
 /**
- * This is the model class for table "categories".
+ * This is the model class for table "blog_categories".
  *
  * @property int $id
- * @property string $title
+ * @property string $name
+ * @property string $slug
+ * @property string $description
+ * @property int $status
  * @property int $created_at
  * @property int $updated_at
  *
- * @property Purchase[] $purchases
+ * @property Article[] $articles
  */
 class Category extends ActiveRecord
 {
+    const STATUS_INACTIVE = 0;
+    const STATUS_ACTIVE = 1;
+
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return '{{%categories}}';
+        return 'blog_categories';
     }
 
     /**
@@ -32,7 +39,7 @@ class Category extends ActiveRecord
     public function behaviors()
     {
         return [
-            TimestampBehavior::class,
+            TimestampBehavior::className(),
         ];
     }
 
@@ -42,9 +49,12 @@ class Category extends ActiveRecord
     public function rules()
     {
         return [
-            [['title'], 'required'],
-            [['created_at', 'updated_at'], 'integer'],
-            [['title'], 'string', 'max' => 255],
+            [['name', 'slug'], 'required'],
+            [['description'], 'string'],
+            [['status'], 'integer'],
+            [['name', 'slug'], 'string', 'max' => 255],
+            [['slug'], 'unique'],
+            [['status'], 'default', 'value' => self::STATUS_ACTIVE],
         ];
     }
 
@@ -55,75 +65,37 @@ class Category extends ActiveRecord
     {
         return [
             'id' => 'ID',
-            'title' => 'Название категории',
+            'name' => 'Название',
+            'slug' => 'URL-адрес',
+            'description' => 'Описание',
+            'status' => 'Статус',
             'created_at' => 'Дата создания',
             'updated_at' => 'Дата обновления',
         ];
     }
 
     /**
-     * Gets query for [[Products]].
-     *
      * @return \yii\db\ActiveQuery
      */
-    public function getProducts()
+    public function getArticles()
     {
-        return $this->hasMany(Product::class, ['category_id' => 'id']);
+        return $this->hasMany(Article::className(), ['category_id' => 'id'])
+            ->where(['status' => Article::STATUS_PUBLISHED]);
     }
 
     /**
-     * Gets query for [[Purchases]].
-     *
-     * @return \yii\db\ActiveQuery
+     * Получить количество статей в категории
      */
-    public function getPurchases()
+    public function getArticlesCount()
     {
-        return $this->hasMany(Purchase::class, ['category_id' => 'id']);
+        return $this->getArticles()->count();
     }
 
     /**
-     * Get categories dropdown
-     *
-     * @return array
+     * Получить URL категории
      */
-    public static function getCategoriesDropdown()
+    public function getUrl()
     {
-        $categories = static::find()
-            ->orderBy(['title' => SORT_ASC])
-            ->all();
-        
-        $result = [];
-        foreach ($categories as $category) {
-            $result[$category->id] = $category->title;
-        }
-        
-        return $result;
-    }
-
-    /**
-     * Get formatted created date
-     *
-     * @return string
-     */
-    public function getFormattedCreatedDate()
-    {
-        if (!$this->created_at) {
-            return 'Не указана';
-        }
-        
-        $date = new \DateTime();
-        $date->setTimestamp($this->created_at);
-        
-        $months = [
-            1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля',
-            5 => 'мая', 6 => 'июня', 7 => 'июля', 8 => 'августа',
-            9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря'
-        ];
-        
-        $day = $date->format('d');
-        $month = $months[(int)$date->format('n')];
-        $year = $date->format('Y');
-        
-        return $day . ' ' . $month . ' ' . $year . ' года';
+        return Url::to(['/blog/category', 'slug' => $this->slug]);
     }
 }

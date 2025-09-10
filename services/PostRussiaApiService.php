@@ -45,7 +45,7 @@ class PostRussiaApiService extends Component
      * @param string $trackingNumber Трек-номер
      * @return array Результат отслеживания с полем 'success'
      */
-    public function trackPackage($trackingNumber): array
+    public function trackPackage($trackingNumber)
     {
         if (empty($trackingNumber)) {
             Yii::error('Трек-номер не указан');

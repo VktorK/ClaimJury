@@ -43,11 +43,7 @@ $this->params['breadcrumbs'][] = 'Редактировать';
                     </div>
 
                     <div class="form-group">
-                        <?= $form->field($model, 'claim_type')->dropDownList([
-                            $model::TYPE_REPAIR => 'Ремонт',
-                            $model::TYPE_REFUND => 'Возврат денежных средств',
-                            $model::TYPE_REPLACEMENT => 'Замена товара на аналогичный товар',
-                        ], [
+                        <?= $form->field($model, 'claim_type')->dropDownList($model::getClaimTypes(), [
                             'class' => 'form-control',
                             'prompt' => 'Выберите тип претензии...'
                         ])->label('Тип претензии') ?>
@@ -281,4 +277,51 @@ $this->params['breadcrumbs'][] = 'Редактировать';
 .badge-success { background: linear-gradient(135deg, #10B981, #059669); color: white; }
 .badge-danger { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; }
 .badge-secondary { background: linear-gradient(135deg, #6B7280, #4B5563); color: white; }
+
+/* Стили для дропдаунов */
+.form-control {
+    color: #000 !important;
+    background-color: #fff !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 16px 20px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    min-width: 300px !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 56px !important;
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.form-control:focus {
+    border-color: #10B981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+    outline: none !important;
+}
+
+.form-control option {
+    color: #333 !important;
+    background-color: #fff !important;
+    padding: 8px 12px !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+}
+
+.form-control option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.form-control option:checked {
+    background-color: #10B981 !important;
+    color: white !important;
+}
 </style>

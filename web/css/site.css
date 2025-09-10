@@ -82,3 +82,170 @@ a.desc:after {
 .nav > li > form > button.logout:focus {
     outline: none;
 }
+
+/* Стили для дропдаунов - глобальные */
+.form-control {
+    color: #000 !important;
+    background-color: #fff !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 16px 20px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    min-width: 300px !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 56px !important;
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.form-control:focus {
+    border-color: #10B981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+    outline: none !important;
+    color: #000 !important;
+}
+
+.form-control option {
+    color: #000 !important;
+    background-color: #fff !important;
+    padding: 10px 12px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+}
+
+.form-control option:hover {
+    background-color: #f3f4f6 !important;
+    color: #000 !important;
+}
+
+.form-control option:checked {
+    background-color: #10B981 !important;
+    color: white !important;
+}
+
+/* Стили для селектов */
+select.form-control {
+    color: #000 !important;
+    background-color: #fff !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 16px 20px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    min-width: 300px !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 56px !important;
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+select.form-control:focus {
+    border-color: #10B981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+    outline: none !important;
+    color: #000 !important;
+}
+
+select.form-control option {
+    color: #000 !important;
+    background-color: #fff !important;
+    padding: 10px 12px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+}
+
+select.form-control option:hover {
+    background-color: #f3f4f6 !important;
+    color: #000 !important;
+}
+
+select.form-control option:checked {
+    background-color: #10B981 !important;
+    color: white !important;
+}
+
+/* Дополнительные стили для улучшения видимости */
+select {
+    color: #000 !important;
+    background-color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    min-width: 300px !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 56px !important;
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
+    padding: 16px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+select option {
+    color: #000 !important;
+    background-color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+    padding: 8px 12px !important;
+}
+
+/* Принудительные стили для всех дропдаунов */
+*[class*="form-control"] {
+    color: #000 !important;
+    background-color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    min-width: 300px !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 56px !important;
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
+    padding: 16px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+*[class*="form-control"] option {
+    color: #000 !important;
+    background-color: #fff !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+    opacity: 1 !important;
+}

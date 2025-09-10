@@ -44,6 +44,11 @@ class Claim extends ActiveRecord
     const TYPE_REPAIR = 'repair';
     const TYPE_REFUND = 'refund';
     const TYPE_REPLACEMENT = 'replacement';
+    const TYPE_QUALITY_ISSUE = 'quality_issue';
+    const TYPE_WARRANTY = 'warranty';
+    const TYPE_DELIVERY = 'delivery';
+    const TYPE_OTHER = 'other';
+    const TYPE_CUSTOM = 'custom';
 
     /**
      * {@inheritdoc}
@@ -79,7 +84,7 @@ class Claim extends ActiveRecord
             [['tracking_status'], 'string', 'max' => 100],
             [['status'], 'default', 'value' => self::STATUS_PENDING],
             [['status'], 'in', 'range' => [self::STATUS_PENDING, self::STATUS_IN_PROGRESS, self::STATUS_RESOLVED, self::STATUS_REJECTED, self::STATUS_CLOSED]],
-            [['claim_type'], 'in', 'range' => [self::TYPE_REPAIR, self::TYPE_REFUND, self::TYPE_REPLACEMENT]],
+            [['claim_type'], 'in', 'range' => [self::TYPE_REPAIR, self::TYPE_REFUND, self::TYPE_REPLACEMENT, self::TYPE_DELIVERY, self::TYPE_CUSTOM]],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
             [['purchase_id'], 'exist', 'skipOnError' => true, 'targetClass' => Purchase::class, 'targetAttribute' => ['purchase_id' => 'id']],
         ];
@@ -159,7 +164,9 @@ class Claim extends ActiveRecord
         $types = [
             self::TYPE_REPAIR => 'Ремонт',
             self::TYPE_REFUND => 'Возврат денежных средств',
-            self::TYPE_REPLACEMENT => 'Замена товара на аналогичный товар',
+            self::TYPE_REPLACEMENT => 'Замена товара',
+            self::TYPE_DELIVERY => 'Проблемы с доставкой',
+            self::TYPE_CUSTOM => 'Свой вариант',
         ];
 
         return $types[$this->claim_type] ?? $this->claim_type;
@@ -357,5 +364,45 @@ class Claim extends ActiveRecord
         ];
 
         return $statusMap[$this->tracking_status] ?? 'badge-secondary';
+    }
+
+    /**
+     * Получить шаблоны претензий для данного типа
+     * @return ClaimTemplate[]
+     */
+    public function getAvailableTemplates()
+    {
+        return ClaimTemplate::getActiveByType($this->claim_type);
+    }
+
+    /**
+     * Заполнить описание претензии из шаблона
+     * @param int $templateId ID шаблона
+     * @return bool
+     */
+    public function fillFromTemplate($templateId)
+    {
+        $template = ClaimTemplate::findOne($templateId);
+        if (!$template || $template->type !== $this->claim_type) {
+            return false;
+        }
+
+        $this->description = $template->fillTemplate($this->purchase);
+        return true;
+    }
+
+    /**
+     * Получить все доступные типы претензий
+     * @return array
+     */
+    public static function getClaimTypes()
+    {
+        return [
+            self::TYPE_REPAIR => 'Ремонт',
+            self::TYPE_REFUND => 'Возврат денежных средств',
+            self::TYPE_REPLACEMENT => 'Замена товара',
+            self::TYPE_DELIVERY => 'Проблемы с доставкой',
+            self::TYPE_CUSTOM => 'Свой вариант',
+        ];
     }
 }
