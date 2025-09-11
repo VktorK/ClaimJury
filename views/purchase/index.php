@@ -929,6 +929,8 @@ $this->params['breadcrumbs'][] = $this->title;
 
 #claimsModal .modal-body {
     padding: 1.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
 }
 
 #claimsModal .modal-footer {
@@ -945,6 +947,77 @@ $this->params['breadcrumbs'][] = $this->title;
 
 #claimsModal .btn-close:hover {
     opacity: 1;
+}
+
+/* Стили для таблицы в модальном окне */
+#claimsModal .table {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+#claimsModal .table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    padding: 10px 8px;
+}
+
+#claimsModal .table td {
+    font-size: 0.85rem;
+    padding: 10px 8px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+#claimsModal .table-responsive {
+    border: none;
+}
+
+#claimsModal .btn-sm {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    margin: 1px;
+}
+
+#claimsModal .claim-type-badge {
+    background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+#claimsModal .purchase-link {
+    color: #059669;
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+#claimsModal .purchase-link:hover {
+    color: #047857;
+    text-decoration: underline;
+}
+
+/* Анимация для индикатора загрузки */
+#claimsModal .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+#claimsModal .text-center {
+    padding: 20px;
+}
+
+/* Скрытие всех фильтров в модальном окне */
+#claimsModal .filters,
+#claimsModal .grid-view thead tr:first-child {
+    display: none !important;
 }
 
 .claims-link {
@@ -1137,18 +1210,36 @@ function loadClaims(purchaseId) {
     if (modalBody) {
         modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="sr-only">Загрузка...</span></div><p class="mt-2">Загрузка претензий...</p></div>';
         
-        fetch('/claim/index?ajax=1&ClaimSearch[purchase_id]=' + purchaseId)
+        fetch('/claim/index?ClaimSearch[purchase_id]=' + purchaseId)
             .then(response => response.text())
             .then(html => {
                 // Парсим HTML и извлекаем только таблицу
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
-                const table = doc.querySelector('.grid-view');
+                
+                // Ищем таблицу с классом table-responsive или grid-view
+                let table = doc.querySelector('.table-responsive .grid-view');
+                if (!table) {
+                    table = doc.querySelector('.grid-view');
+                }
+                if (!table) {
+                    table = doc.querySelector('.table');
+                }
                 
                 if (table) {
-                    modalBody.innerHTML = table.outerHTML;
+                    // Создаем контейнер для таблицы
+                    modalBody.innerHTML = '<div class="table-responsive">' + table.outerHTML + '</div>';
+                    
+                    // Скрываем все фильтры в модальном окне
+                    hideAllFiltersInModal();
                 } else {
-                    modalBody.innerHTML = '<div class="text-center text-muted"><p>Данные отсутствуют</p></div>';
+                    // Проверяем, есть ли сообщение об отсутствии данных
+                    const emptyText = doc.querySelector('.text-center.text-muted');
+                    if (emptyText) {
+                        modalBody.innerHTML = emptyText.outerHTML;
+                    } else {
+                        modalBody.innerHTML = '<div class="text-center text-muted"><p>Претензии по этой покупке не найдены</p></div>';
+                    }
                 }
             })
             .catch(error => {
@@ -1157,6 +1248,22 @@ function loadClaims(purchaseId) {
             });
     }
 }
+
+// Функция для скрытия всех фильтров в модальном окне
+function hideAllFiltersInModal() {
+    // Скрываем всю строку фильтров
+    const filtersRow = document.querySelector('#claimsModal .filters');
+    if (filtersRow) {
+        filtersRow.style.display = 'none';
+    }
+    
+    // Также скрываем заголовки фильтров в таблице
+    const filtersHeader = document.querySelector('#claimsModal .grid-view thead tr:first-child');
+    if (filtersHeader) {
+        filtersHeader.style.display = 'none';
+    }
+}
+
 
 function createClaim() {
     // Получаем ID покупки из глобальной переменной или из контекста

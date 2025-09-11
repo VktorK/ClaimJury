@@ -405,4 +405,22 @@ class Claim extends ActiveRecord
             self::TYPE_CUSTOM => 'Свой вариант',
         ];
     }
+
+    /**
+     * Связь с пакетами отслеживания
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPackages()
+    {
+        return $this->hasMany(Package::class, ['claim_id' => 'id']);
+    }
+
+    /**
+     * Получить последний пакет отслеживания
+     * @return \yii\db\ActiveQuery
+     */
+    public function getLastPackage()
+    {
+        return $this->hasOne(Package::class, ['claim_id' => 'id'])->orderBy(['last_check' => SORT_DESC]);
+    }
 }

@@ -25,6 +25,16 @@ use yii\helpers\FileHelper;
  * @property string $receipt_image
  * @property int|null $warranty_period
  * @property string|null $appeal_deadline
+ * @property bool|null $was_repaired_officially
+ * @property string|null $repair_document_description
+ * @property string|null $repair_document_date
+ * @property string|null $defect_proof_type
+ * @property string|null $defect_proof_document_description
+ * @property string|null $defect_proof_document_date
+ * @property string|null $general_defect_description
+ * @property string|null $repair_defect_description
+ * @property string|null $current_defect_description
+ * @property string|null $expertise_defect_description
  * @property int $created_at
  * @property int $updated_at
  *
@@ -106,12 +116,17 @@ class Purchase extends ActiveRecord
         return [
             [['user_id', 'purchase_date', 'amount'], 'required'],
             [['user_id', 'seller_id', 'product_id', 'buyer_id', 'warranty_period', 'created_at', 'updated_at'], 'integer'],
-            [['purchase_date', 'appeal_deadline'], 'safe'],
+            [['purchase_date', 'appeal_deadline', 'repair_document_date', 'defect_proof_document_date'], 'safe'],
             [['amount'], 'number', 'min' => 0],
             [['product_name', 'seller_name'], 'string', 'max' => 255],
             [['currency'], 'string', 'max' => 3],
             [['description'], 'string', 'max' => 1000],
             [['receipt_image'], 'string', 'max' => 500],
+            [['was_repaired_officially'], 'boolean'],
+            [['repair_document_description', 'defect_proof_document_description'], 'string', 'max' => 500],
+            [['defect_proof_type'], 'string', 'max' => 50],
+            [['defect_proof_type'], 'in', 'range' => ['quality_check', 'independent_expertise', 'no_proof']],
+            [['general_defect_description', 'repair_defect_description', 'current_defect_description', 'expertise_defect_description'], 'string'],
             [['receipt_image'], 'file', 'extensions' => 'png, jpg, jpeg, gif, pdf', 'maxSize' => 5 * 1024 * 1024],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
             [['seller_id'], 'exist', 'skipOnError' => true, 'targetClass' => Seller::class, 'targetAttribute' => ['seller_id' => 'id']],
@@ -333,6 +348,110 @@ class Purchase extends ActiveRecord
     }
 
     /**
+     * Check if warranty period has expired
+     *
+     * @return bool
+     */
+    public function isWarrantyExpired()
+    {
+        if (!$this->warranty_period || !$this->purchase_date) {
+            return false;
+        }
+        
+        $purchaseDate = new \DateTime($this->purchase_date);
+        $warrantyEndDate = clone $purchaseDate;
+        $warrantyEndDate->add(new \DateInterval('P' . $this->warranty_period . 'D'));
+        
+        return $warrantyEndDate < new \DateTime();
+    }
+    
+    /**
+     * Check if appeal deadline has expired (24 months from purchase)
+     *
+     * @return bool
+     */
+    public function isAppealDeadlineExpired()
+    {
+        if (!$this->purchase_date) {
+            return true;
+        }
+        
+        $purchaseDate = new \DateTime($this->purchase_date);
+        $appealDeadline = clone $purchaseDate;
+        $appealDeadline->add(new \DateInterval('P24M')); // 24 months
+        
+        return $appealDeadline < new \DateTime();
+    }
+    
+    /**
+     * Get remaining days until appeal deadline
+     *
+     * @return int|null
+     */
+    public function getRemainingAppealDays()
+    {
+        if (!$this->purchase_date) {
+            return null;
+        }
+        
+        $purchaseDate = new \DateTime($this->purchase_date);
+        $appealDeadline = clone $purchaseDate;
+        $appealDeadline->add(new \DateInterval('P24M')); // 24 months
+        
+        $now = new \DateTime();
+        $diff = $now->diff($appealDeadline);
+        
+        if ($appealDeadline < $now) {
+            return 0; // Deadline expired
+        }
+        
+        return $diff->days;
+    }
+    
+    /**
+     * Get appeal deadline date (24 months from purchase)
+     *
+     * @return \DateTime|null
+     */
+    public function getAppealDeadlineDate()
+    {
+        if (!$this->purchase_date) {
+            return null;
+        }
+        
+        $purchaseDate = new \DateTime($this->purchase_date);
+        $appealDeadline = clone $purchaseDate;
+        $appealDeadline->add(new \DateInterval('P24M')); // 24 months
+        
+        return $appealDeadline;
+    }
+    
+    /**
+     * Get formatted appeal deadline date
+     *
+     * @return string
+     */
+    public function getFormattedAppealDeadlineDate()
+    {
+        $deadline = $this->getAppealDeadlineDate();
+        if (!$deadline) {
+            return 'Не рассчитан';
+        }
+        
+        $months = [
+            1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля',
+            5 => 'мая', 6 => 'июня', 7 => 'июля', 8 => 'августа',
+            9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря'
+        ];
+        
+        $day = $deadline->format('d');
+        $month = $months[(int)$deadline->format('n')];
+        $year = $deadline->format('Y');
+        
+        return $day . ' ' . $month . ' ' . $year . ' года';
+    }
+
+    /**
      * Get formatted created date
      *
      * @return string
@@ -470,5 +589,66 @@ class Purchase extends ActiveRecord
             return $this->buyer->getFullName();
         }
         return 'Не указан';
+    }
+
+    /**
+     * Get repair status label
+     *
+     * @return string
+     */
+    public function getRepairStatusLabel()
+    {
+        return $this->was_repaired_officially ? 'Да' : 'Нет';
+    }
+
+    /**
+     * Get defect proof type label
+     *
+     * @return string
+     */
+    public function getDefectProofTypeLabel()
+    {
+        switch ($this->defect_proof_type) {
+            case 'quality_check':
+                return 'Акт проверки качества';
+            case 'independent_expertise':
+                return 'Независимая экспертиза';
+            case 'no_proof':
+                return 'Экспертиза не проводилась';
+            default:
+                return 'Не указано';
+        }
+    }
+
+    /**
+     * Check if repair information is complete
+     *
+     * @return bool
+     */
+    public function isRepairInfoComplete()
+    {
+        if (!$this->was_repaired_officially) {
+            return true; // No repair, no additional info needed
+        }
+        
+        return !empty($this->repair_document_description) && !empty($this->repair_document_date);
+    }
+
+    /**
+     * Check if defect proof information is complete
+     *
+     * @return bool
+     */
+    public function isDefectProofInfoComplete()
+    {
+        if ($this->defect_proof_type === 'no_proof') {
+            return true; // No proof needed
+        }
+        
+        if (in_array($this->defect_proof_type, ['quality_check', 'independent_expertise'])) {
+            return !empty($this->defect_proof_document_description) && !empty($this->defect_proof_document_date);
+        }
+        
+        return false;
     }
 }

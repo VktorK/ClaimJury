@@ -13,7 +13,6 @@ $config = [
     ],
     'components' => [
         'request' => [
-            // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'LJ1EhCqnSIems4ul05wKwFLcw_Zi4GzD',
         ],
         'cache' => [
@@ -88,6 +87,7 @@ $config = [
                 'claim/save-user-template' => 'claim/save-user-template',
                 'claim/delete-user-template' => 'claim/delete-user-template',
                 'claim/toggle-favorite-template' => 'claim/toggle-favorite-template',
+                'claim/check-tracking' => 'claim/check-tracking',
             ],
         ],
         'log' => [
@@ -100,14 +100,6 @@ $config = [
             ],
         ],
         'db' => $db,
-        /*
-        'urlManager' => [
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
-            'rules' => [
-            ],
-        ],
-        */
     ],
     'params' => $params,
 ];

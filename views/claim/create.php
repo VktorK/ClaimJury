@@ -88,6 +88,9 @@ $this->params['breadcrumbs'][] = $this->title;
                                 <i class="fas fa-file-word"></i> Скачать в Word
                             </button>
                         </div>
+                        
+                        <!-- Скрытое поле для сохранения шаблона в претензии -->
+                        <?= Html::hiddenInput('Claim[description]', '', ['id' => 'claim-description-hidden']) ?>
                         <div class="mt-2">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle"></i> 
@@ -1212,6 +1215,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('purchase_id').value = selectedPurchase;
         
         if (selectedPurchase) {
+            // Проверяем гарантийный срок и срок подачи претензии
+            checkWarrantyAndAppealDeadline(selectedPurchase);
+            
             // Показать выбор типа претензии
             claimTypeGroup.style.display = 'block';
             // Скрыть шаблоны и сбросить их
@@ -1234,6 +1240,475 @@ document.addEventListener('DOMContentLoaded', function() {
         // Применить стили после изменений
         setTimeout(applyDropdownStyles, 50);
     });
+
+    // Функция для проверки гарантийного срока и срока подачи претензии
+    function checkWarrantyAndAppealDeadline(purchaseId) {
+        console.log('Проверка гарантийного срока для покупки:', purchaseId);
+        
+        fetch('/claim/check-warranty?purchase_id=' + purchaseId, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                console.log('Ответ сервера:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Данные от сервера:', data);
+                
+                if (data.success) {
+                    // Сохраняем дату окончания срока подачи претензии в глобальной переменной
+                    window.appealDeadlineDate = data.appeal_deadline_date;
+                    
+                    // Сохраняем все данные о гарантийном сроке в глобальной переменной
+                    window.warrantyData = data;
+                    
+                    console.log('Гарантийный срок истек:', data.warranty_expired);
+                    console.log('Срок подачи претензии истек:', data.appeal_deadline_expired);
+                    
+                    // Показываем модальное окно с информацией всегда
+                    showWarrantyInfoModal(data);
+                } else {
+                    console.error('Ошибка проверки гарантийного срока:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка проверки гарантийного срока:', error);
+            });
+    }
+
+    // Функция для показа модального окна с информацией о гарантийном сроке
+    function showWarrantyInfoModal(data) {
+        // Сначала показываем вопрос о ремонте
+        showRepairQuestionModal(data);
+    }
+
+    // Функция для показа модального окна с вопросом о ремонте
+    function showRepairQuestionModal(data) {
+        const modalHtml = `
+            <div class="modal fade" id="repairQuestionModal" tabindex="-1" aria-labelledby="repairQuestionModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="repairQuestionModalLabel">Информация о товаре</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <h6>Ремонтировался ли ранее товар в официальном сервисном центре продавца либо изготовителя?</h6>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="wasRepaired" id="wasRepairedYes" value="1">
+                                    <label class="form-check-label" for="wasRepairedYes">
+                                        Да
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="wasRepaired" id="wasRepairedNo" value="0">
+                                    <label class="form-check-label" for="wasRepairedNo">
+                                        Нет
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="repairDocumentFields" style="display: none;">
+                                <h6>Реквизиты акта выполненных работ:</h6>
+                                <div class="mb-3">
+                                    <label for="repairDocumentDescription" class="form-label">Описание и номер документа</label>
+                                    <input type="text" class="form-control" id="repairDocumentDescription" placeholder="Введите описание и номер акта выполненных работ">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="repairDocumentDate" class="form-label">Дата выдачи документа</label>
+                                    <input type="date" class="form-control" id="repairDocumentDate">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="repairDefectDescription" class="form-label">Недостаток согласно акту выполненных работ</label>
+                                    <textarea class="form-control" id="repairDefectDescription" rows="3" placeholder="Опишите недостаток согласно акту выполненных работ"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div id="currentDefectFields" style="display: none;">
+                                <h6>Описание текущего недостатка:</h6>
+                                <div class="mb-3">
+                                    <label for="currentDefectDescription" class="form-label">Опишите текущий недостаток</label>
+                                    <textarea class="form-control" id="currentDefectDescription" rows="3" placeholder="Опишите текущий недостаток товара"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="handleRepairQuestion()">Продолжить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Удаляем предыдущее модальное окно, если оно есть
+        const existingModal = document.getElementById('repairQuestionModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Добавляем новое модальное окно
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Показываем модальное окно
+        const modal = new bootstrap.Modal(document.getElementById('repairQuestionModal'));
+        modal.show();
+        
+        // Обработчик изменения радио кнопок
+        document.querySelectorAll('input[name="wasRepaired"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const repairFields = document.getElementById('repairDocumentFields');
+                const currentDefectFields = document.getElementById('currentDefectFields');
+                
+                if (this.value === '1') {
+                    repairFields.style.display = 'block';
+                    currentDefectFields.style.display = 'none';
+                } else {
+                    repairFields.style.display = 'none';
+                    currentDefectFields.style.display = 'block';
+                }
+            });
+        });
+    }
+
+    // Функция для обработки вопроса о ремонте
+    window.handleRepairQuestion = function() {
+        const selectedRepair = document.querySelector('input[name="wasRepaired"]:checked');
+        
+        if (!selectedRepair) {
+            console.error('Пожалуйста, выберите один из вариантов');
+            return;
+        }
+        
+        const purchaseId = document.getElementById('purchase_id').value;
+        const wasRepairedOfficially = selectedRepair.value === '1';
+        const repairDocumentDescription = document.getElementById('repairDocumentDescription').value;
+        const repairDocumentDate = document.getElementById('repairDocumentDate').value;
+        const repairDefectDescription = document.getElementById('repairDefectDescription').value;
+        const currentDefectDescription = document.getElementById('currentDefectDescription').value;
+        
+        // Определяем описание недостатка в зависимости от выбора
+        const defectDescription = wasRepairedOfficially ? repairDefectDescription : currentDefectDescription;
+        
+        // Сохраняем информацию о ремонте
+        saveRepairInfo(purchaseId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription);
+        
+        // Закрываем текущее модальное окно
+        const modal = bootstrap.Modal.getInstance(document.getElementById('repairQuestionModal'));
+        modal.hide();
+        
+        // Показываем следующее модальное окно с вопросом о доказательствах недостатка
+        showDefectProofModal();
+    };
+
+    // Функция для показа модального окна с вопросом о доказательствах недостатка
+    window.showDefectProofModal = function() {
+        const modalHtml = `
+            <div class="modal fade" id="defectProofModal" tabindex="-1" aria-labelledby="defectProofModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="defectProofModalLabel">Доказательства недостатка</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <h6>Есть ли у Вас подтверждение недостатка?</h6>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="defect_proof" id="quality_check" value="quality_check">
+                                    <label class="form-check-label" for="quality_check">
+                                        Акт проверки качества
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="defect_proof" id="independent_expertise" value="independent_expertise">
+                                    <label class="form-check-label" for="independent_expertise">
+                                        Независимая экспертиза
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="defect_proof" id="no_proof" value="no_proof">
+                                    <label class="form-check-label" for="no_proof">
+                                        Экспертиза не проводилась
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="defectProofDocumentFields" style="display: none;">
+                                <h6>Реквизиты документа:</h6>
+                                <div class="mb-3">
+                                    <label for="defectProofDocumentDescription" class="form-label">Описание и номер документа</label>
+                                    <input type="text" class="form-control" id="defectProofDocumentDescription" placeholder="Введите описание и номер документа">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="defectProofDocumentDate" class="form-label">Дата выдачи документа</label>
+                                    <input type="date" class="form-control" id="defectProofDocumentDate">
+                                </div>
+                            </div>
+                            
+                            <div id="defectSimilarityQuestion" style="display: none;">
+                                <h6>Недостаток аналогичный указанному?</h6>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="defect_similarity" id="defectSimilarYes" value="1">
+                                        <label class="form-check-label" for="defectSimilarYes">
+                                            Да
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="defect_similarity" id="defectSimilarNo" value="0">
+                                        <label class="form-check-label" for="defectSimilarNo">
+                                            Нет
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="defectDescriptionField" style="display: none;">
+                                <h6>Описание недостатка:</h6>
+                                <div class="mb-3">
+                                    <label for="defectDescription" class="form-label">Краткое описание текущего недостатка</label>
+                                    <textarea class="form-control" id="defectDescription" rows="3" placeholder="Опишите текущий недостаток товара"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="handleDefectProofSelection()">Продолжить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Удаляем предыдущее модальное окно, если оно есть
+        const existingModal = document.getElementById('defectProofModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Добавляем новое модальное окно
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Показываем модальное окно
+        const modal = new bootstrap.Modal(document.getElementById('defectProofModal'));
+        modal.show();
+        
+        // Обработчик изменения радио кнопок
+        document.querySelectorAll('input[name="defect_proof"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const documentFields = document.getElementById('defectProofDocumentFields');
+                const similarityQuestion = document.getElementById('defectSimilarityQuestion');
+                const descriptionField = document.getElementById('defectDescriptionField');
+                
+                if (this.value === 'quality_check' || this.value === 'independent_expertise') {
+                    documentFields.style.display = 'block';
+                    similarityQuestion.style.display = 'block';
+                    descriptionField.style.display = 'none';
+                } else if (this.value === 'no_proof') {
+                    documentFields.style.display = 'none';
+                    similarityQuestion.style.display = 'block';
+                    descriptionField.style.display = 'none';
+                } else {
+                    documentFields.style.display = 'none';
+                    similarityQuestion.style.display = 'none';
+                    descriptionField.style.display = 'none';
+                }
+            });
+        });
+        
+        // Обработчик изменения радио кнопок для вопроса о схожести недостатка
+        document.querySelectorAll('input[name="defect_similarity"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const descriptionField = document.getElementById('defectDescriptionField');
+                
+                if (this.value === '0') {
+                    descriptionField.style.display = 'block';
+                } else {
+                    descriptionField.style.display = 'none';
+                }
+            });
+        });
+    };
+
+    // Функция для обработки выбора доказательства недостатка
+    window.handleDefectProofSelection = function() {
+        const selectedProof = document.querySelector('input[name="defect_proof"]:checked');
+        
+        if (!selectedProof) {
+            console.error('Пожалуйста, выберите один из вариантов');
+            return;
+        }
+        
+        // Проверяем ответ на вопрос о схожести недостатка (если он показывается)
+        const similarityQuestion = document.getElementById('defectSimilarityQuestion');
+        if (similarityQuestion.style.display !== 'none') {
+            const selectedSimilarity = document.querySelector('input[name="defect_similarity"]:checked');
+            if (!selectedSimilarity) {
+                console.error('Пожалуйста, ответьте на вопрос о схожести недостатка');
+                return;
+            }
+        }
+        
+        const purchaseId = document.getElementById('purchase_id').value;
+        const defectProofType = selectedProof.value;
+        const defectProofDocumentDescription = document.getElementById('defectProofDocumentDescription').value;
+        const defectProofDocumentDate = document.getElementById('defectProofDocumentDate').value;
+        
+        // Проверяем ответ на вопрос о схожести недостатка
+        const selectedSimilarity = document.querySelector('input[name="defect_similarity"]:checked');
+        let defectDescription = '';
+        
+        if (selectedSimilarity && selectedSimilarity.value === '0') {
+            // Если выбрано "Нет", берем описание из поля
+            defectDescription = document.getElementById('defectDescription').value;
+        }
+        // Если выбрано "Да", defectDescription остается пустым
+        
+        // Сохраняем информацию о доказательствах недостатка
+        saveDefectProofInfo(purchaseId, defectProofType, defectProofDocumentDescription, defectProofDocumentDate, defectDescription);
+        
+        if (selectedProof.value === 'no_proof') {
+            // Проверяем условия для показа модального окна с информацией о законе
+            // Оно показывается только если гарантийный срок истек, но срок подачи претензии не истек
+            if (window.warrantyData && window.warrantyData.warranty_expired && !window.warrantyData.appeal_deadline_expired) {
+                // Показываем модальное окно с информацией о законе
+                showLawInfoModal();
+            } else {
+                // Закрываем текущее модальное окно и продолжаем создание претензии
+                const modal = bootstrap.Modal.getInstance(document.getElementById('defectProofModal'));
+                modal.hide();
+            }
+        } else {
+            // Закрываем текущее модальное окно и продолжаем создание претензии
+            const modal = bootstrap.Modal.getInstance(document.getElementById('defectProofModal'));
+            modal.hide();
+        }
+    };
+
+    // Функция для показа модального окна с информацией о законе
+    function showLawInfoModal() {
+        const modalHtml = `
+            <div class="modal fade" id="lawInfoModal" tabindex="-1" aria-labelledby="lawInfoModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: white;">
+                            <h5 class="modal-title" id="lawInfoModalLabel">
+                                <i class="fas fa-gavel"></i> Информация о правах потребителя
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="color: white;"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Согласно ч.5 статьи 19 Закона РФ "О защите прав потребителей"</h6>
+                                <p>В случае обнаружения недостатков товара по истечении гарантийного срока, но в пределах двух лет со дня передачи товара потребителю, продавец (изготовитель) обязан удовлетворить требования потребителя, если потребитель докажет, что недостатки товара возникли до его передачи потребителю или по причинам, возникшим до этого момента.</p>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-exclamation-triangle"></i> Рекомендации</h6>
+                                <p>Рекомендуем потребителю получить доказательства недостатка товара. Вы можете подать претензию до <strong>${getAppealDeadlineDate()}</strong>.</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="redirectToClaims()">Понятно</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Удаляем существующее модальное окно, если есть
+        const existingModal = document.getElementById('lawInfoModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Добавляем новое модальное окно
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Показываем модальное окно
+        const modal = new bootstrap.Modal(document.getElementById('lawInfoModal'));
+        modal.show();
+    }
+
+    // Функция для получения даты окончания срока подачи претензии
+    function getAppealDeadlineDate() {
+        // Получаем дату из глобальной переменной, установленной при проверке гарантийного срока
+        return window.appealDeadlineDate || 'даты окончания срока';
+    }
+
+    // Функция для перенаправления на страницу претензий
+    window.redirectToClaims = function() {
+        window.location.href = '/claims';
+    };
+
+    // Функция для сохранения информации о ремонте
+    window.saveRepairInfo = function(purchaseId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription) {
+        const formData = new FormData();
+        formData.append('purchase_id', purchaseId);
+        formData.append('was_repaired_officially', wasRepairedOfficially ? '1' : '0');
+        formData.append('repair_document_description', repairDocumentDescription || '');
+        formData.append('repair_document_date', repairDocumentDate || '');
+        formData.append('defect_description', defectDescription || '');
+        formData.append('_csrf', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+        fetch('/claim/save-repair-info', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Информация о ремонте сохранена успешно');
+            } else {
+                console.error('Ошибка сохранения информации о ремонте:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка сохранения информации о ремонте:', error);
+        });
+    };
+
+    // Функция для сохранения информации о доказательствах недостатка
+    window.saveDefectProofInfo = function(purchaseId, defectProofType, defectProofDocumentDescription, defectProofDocumentDate, defectDescription) {
+        const formData = new FormData();
+        formData.append('purchase_id', purchaseId);
+        formData.append('defect_proof_type', defectProofType);
+        formData.append('defect_proof_document_description', defectProofDocumentDescription || '');
+        formData.append('defect_proof_document_date', defectProofDocumentDate || '');
+        formData.append('defect_description', defectDescription || '');
+        formData.append('_csrf', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+        fetch('/claim/save-defect-proof-info', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Информация о доказательствах недостатка сохранена успешно');
+            } else {
+                console.error('Ошибка сохранения информации о доказательствах недостатка:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка сохранения информации о доказательствах недостатка:', error);
+        });
+    };
 
     // Обработчик изменения типа претензии
     claimTypeSelect.addEventListener('change', function() {

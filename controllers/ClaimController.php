@@ -2,11 +2,14 @@
 
 namespace app\controllers;
 
+use app\services\MoyaposylkaService;
 use Yii;
 use app\models\Claim;
 use app\models\ClaimSearch;
 use app\models\ClaimTemplate;
+use app\models\Package;
 use app\models\UserClaimTemplate;
+use app\models\Purchase;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -22,6 +25,8 @@ use PhpOffice\PhpWord\Style\Paragraph;
  */
 class ClaimController extends Controller
 {
+
+    private MoyaposylkaService $_moyaposylkaService;
     /**
      * {@inheritdoc}
      */
@@ -33,7 +38,7 @@ class ClaimController extends Controller
                 'rules' => [
                     [
                         'allow' => true,
-                        'actions' => ['get-templates', 'get-template-content', 'get-purchase-data', 'generate-docx'],
+                        'actions' => ['get-templates', 'get-template-content', 'get-purchase-data', 'generate-docx', 'check-warranty', 'save-repair-info', 'save-defect-proof-info', 'update-template', 'check-tracking'],
                         'roles' => ['?', '@'], // Разрешаем доступ как авторизованным, так и неавторизованным пользователям
                     ],
                     [
@@ -50,9 +55,21 @@ class ClaimController extends Controller
                     'delete-user-template' => ['POST'],
                     'toggle-favorite-template' => ['POST'],
                     'generate-docx' => ['POST'],
+                    'update-template' => ['POST'],
+                'save-repair-info' => ['POST'],
+                'save-defect-proof-info' => ['POST'],
+                'update-template' => ['POST'],
+                'check-tracking' => ['POST'],
                 ],
             ],
         ];
+    }
+
+    public function __construct($id, $module, MoyaposylkaService $_moyaposylkaService,
+                                $config = [])
+    {
+        parent::__construct($id, $module, $config);
+        $this->_moyaposylkaService = $_moyaposylkaService;
     }
 
     /**
@@ -675,4 +692,406 @@ class ClaimController extends Controller
             return ['success' => false, 'message' => 'Ошибка обновления шаблона'];
         }
     }
+
+    /**
+     * Обновление шаблона претензии (AJAX)
+     */
+    public function actionUpdateTemplate()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $id = Yii::$app->request->get('id');
+        $description = Yii::$app->request->post('description');
+        
+        if (!$id || !$description) {
+            return ['success' => false, 'message' => 'Не указаны обязательные параметры'];
+        }
+        
+        $claim = Claim::findOne($id);
+        if (!$claim) {
+            return ['success' => false, 'message' => 'Претензия не найдена'];
+        }
+        
+        // Проверяем права доступа
+        if ($claim->user_id !== Yii::$app->user->id) {
+            return ['success' => false, 'message' => 'Нет прав для редактирования этой претензии'];
+        }
+        
+        try {
+            $claim->description = $description;
+            if ($claim->save()) {
+                return ['success' => true, 'message' => 'Шаблон успешно обновлен'];
+            } else {
+                return ['success' => false, 'message' => 'Ошибка при сохранении: ' . implode(', ', $claim->getFirstErrors())];
+            }
+        } catch (\Exception $e) {
+            Yii::error('Ошибка при обновлении шаблона претензии: ' . $e->getMessage(), 'claim');
+            return ['success' => false, 'message' => 'Ошибка при сохранении шаблона'];
+        }
+    }
+
+    /**
+     * Проверка гарантийного срока и срока подачи претензии (AJAX)
+     */
+    public function actionCheckWarranty()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $purchaseId = Yii::$app->request->get('purchase_id');
+        
+        Yii::info('Проверка гарантийного срока для покупки: ' . $purchaseId, 'claim');
+        
+        if (!$purchaseId) {
+            Yii::info('Не указан ID покупки', 'claim');
+            return ['success' => false, 'message' => 'Не указан ID покупки'];
+        }
+        
+        $purchase = Purchase::findOne($purchaseId);
+        if (!$purchase) {
+            Yii::info('Покупка не найдена: ' . $purchaseId, 'claim');
+            return ['success' => false, 'message' => 'Покупка не найдена'];
+        }
+        
+        // Проверяем права доступа
+        if ($purchase->user_id !== Yii::$app->user->id) {
+            Yii::info('Нет прав для просмотра покупки: ' . $purchaseId . ', пользователь: ' . Yii::$app->user->id, 'claim');
+            return ['success' => false, 'message' => 'Нет прав для просмотра этой покупки'];
+        }
+        
+        try {
+            $warrantyExpired = $purchase->isWarrantyExpired();
+            $appealDeadlineExpired = $purchase->isAppealDeadlineExpired();
+            $remainingDays = $purchase->getRemainingAppealDays();
+            $appealDeadlineDate = $purchase->getFormattedAppealDeadlineDate();
+            
+            Yii::info('Результаты проверки: warranty_expired=' . ($warrantyExpired ? 'true' : 'false') . 
+                     ', appeal_deadline_expired=' . ($appealDeadlineExpired ? 'true' : 'false') . 
+                     ', remaining_days=' . $remainingDays . 
+                     ', appeal_deadline_date=' . $appealDeadlineDate, 'claim');
+            
+            return [
+                'success' => true,
+                'warranty_expired' => $warrantyExpired,
+                'appeal_deadline_expired' => $appealDeadlineExpired,
+                'remaining_days' => $remainingDays,
+                'appeal_deadline_date' => $appealDeadlineDate
+            ];
+        } catch (\Exception $e) {
+            Yii::error('Ошибка при проверке гарантийного срока: ' . $e->getMessage(), 'claim');
+            return ['success' => false, 'message' => 'Ошибка при проверке гарантийного срока'];
+        }
+    }
+
+    /**
+     * Сохранение информации о ремонте (AJAX)
+     */
+    public function actionSaveRepairInfo()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $purchaseId = Yii::$app->request->post('purchase_id');
+        $wasRepairedOfficially = Yii::$app->request->post('was_repaired_officially');
+        $repairDocumentDescription = Yii::$app->request->post('repair_document_description');
+        $repairDocumentDate = Yii::$app->request->post('repair_document_date');
+        $defectDescription = Yii::$app->request->post('defect_description');
+        
+        Yii::info('Сохранение информации о ремонте для покупки: ' . $purchaseId, 'claim');
+        
+        if (!$purchaseId) {
+            return ['success' => false, 'message' => 'Не указан ID покупки'];
+        }
+        
+        $purchase = Purchase::findOne($purchaseId);
+        if (!$purchase) {
+            return ['success' => false, 'message' => 'Покупка не найдена'];
+        }
+        
+        // Проверяем права доступа
+        if ($purchase->user_id !== Yii::$app->user->id) {
+            return ['success' => false, 'message' => 'Нет прав для редактирования этой покупки'];
+        }
+        
+        try {
+        $purchase->was_repaired_officially = (bool)$wasRepairedOfficially;
+        $purchase->repair_document_description = $repairDocumentDescription;
+        $purchase->repair_document_date = $repairDocumentDate;
+        
+        // Сохраняем описание недостатка в соответствующее поле
+        if ($wasRepairedOfficially) {
+            $purchase->repair_defect_description = $defectDescription;
+        } else {
+            $purchase->current_defect_description = $defectDescription;
+        }
+            
+            if ($purchase->save()) {
+                Yii::info('Информация о ремонте сохранена успешно', 'claim');
+                return ['success' => true, 'message' => 'Информация о ремонте сохранена'];
+            } else {
+                Yii::error('Ошибки валидации при сохранении информации о ремонте: ' . implode(', ', $purchase->getFirstErrors()), 'claim');
+                return ['success' => false, 'message' => 'Ошибка при сохранении информации о ремонте'];
+            }
+        } catch (\Exception $e) {
+            Yii::error('Ошибка при сохранении информации о ремонте: ' . $e->getMessage(), 'claim');
+            return ['success' => false, 'message' => 'Ошибка при сохранении информации о ремонте'];
+        }
+    }
+
+    /**
+     * Сохранение информации о доказательствах недостатка (AJAX)
+     */
+    public function actionSaveDefectProofInfo()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $purchaseId = Yii::$app->request->post('purchase_id');
+        $defectProofType = Yii::$app->request->post('defect_proof_type');
+        $defectProofDocumentDescription = Yii::$app->request->post('defect_proof_document_description');
+        $defectProofDocumentDate = Yii::$app->request->post('defect_proof_document_date');
+        $defectDescription = Yii::$app->request->post('defect_description');
+        
+        Yii::info('Сохранение информации о доказательствах недостатка для покупки: ' . $purchaseId, 'claim');
+        
+        if (!$purchaseId) {
+            return ['success' => false, 'message' => 'Не указан ID покупки'];
+        }
+        
+        $purchase = Purchase::findOne($purchaseId);
+        if (!$purchase) {
+            return ['success' => false, 'message' => 'Покупка не найдена'];
+        }
+        
+        // Проверяем права доступа
+        if ($purchase->user_id !== Yii::$app->user->id) {
+            return ['success' => false, 'message' => 'Нет прав для редактирования этой покупки'];
+        }
+        
+        try {
+            $purchase->defect_proof_type = $defectProofType;
+            $purchase->defect_proof_document_description = $defectProofDocumentDescription;
+            $purchase->defect_proof_document_date = $defectProofDocumentDate;
+            
+            // Сохраняем описание недостатка в соответствующее поле
+            if ($defectProofType === 'quality_check' || $defectProofType === 'independent_expertise') {
+                $purchase->expertise_defect_description = $defectDescription;
+            } else {
+                $purchase->general_defect_description = $defectDescription;
+            }
+            
+            if ($purchase->save()) {
+                Yii::info('Информация о доказательствах недостатка сохранена успешно', 'claim');
+                return ['success' => true, 'message' => 'Информация о доказательствах недостатка сохранена'];
+            } else {
+                Yii::error('Ошибки валидации при сохранении информации о доказательствах недостатка: ' . implode(', ', $purchase->getFirstErrors()), 'claim');
+                return ['success' => false, 'message' => 'Ошибка при сохранении информации о доказательствах недостатка'];
+            }
+        } catch (\Exception $e) {
+            Yii::error('Ошибка при сохранении информации о доказательствах недостатка: ' . $e->getMessage(), 'claim');
+            return ['success' => false, 'message' => 'Ошибка при сохранении информации о доказательствах недостатка'];
+        }
+    }
+
+    /**
+     * Проверка статуса отслеживания
+     */
+    public function actionCheckTracking()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $trackingNumber = Yii::$app->request->post('tracking_number');
+        $claimId = Yii::$app->request->post('claim_id');
+        
+        if (!$trackingNumber || !$claimId) {
+            return ['success' => false, 'message' => 'Не указаны обязательные параметры'];
+        }
+        
+        $claim = Claim::findOne($claimId);
+        if (!$claim) {
+            return ['success' => false, 'message' => 'Претензия не найдена'];
+        }
+        
+        if ($claim->user_id !== Yii::$app->user->id) {
+            return ['success' => false, 'message' => 'Нет прав для проверки статуса этой претензии'];
+        }
+
+        try {
+            // Определяем перевозчика по номеру отслеживания
+            $carrier = $this->_moyaposylkaService->detectCarrier($trackingNumber);
+
+            // Сначала добавляем трекер
+            $addResult = $this->_moyaposylkaService->addTracker($carrier, $trackingNumber);
+            if (!$addResult) {
+                return [
+                    'success' => false,
+                    'message' => 'Не удалось добавить трекер для отслеживания'
+                ];
+            }
+
+            // Затем получаем информацию
+            $infoResult = $this->_moyaposylkaService->getTrackerInfo($carrier, $trackingNumber);
+
+            if ($infoResult) {
+                // Создаем или обновляем запись в таблице packages
+                $package = Package::createOrUpdate($trackingNumber, $this->mapApiStatusToPackageStatus($infoResult), $infoResult, $claim->id);
+                
+                // Обновляем данные в претензии
+                $claim->tracking_number = $trackingNumber;
+                $claim->tracking_status = $this->formatTrackingStatus($infoResult);
+                $claim->last_tracking_update = time();
+                $claim->save();
+                
+                // Формируем полную информацию о трекере для модального окна
+                $trackerInfo = $this->formatTrackerInfoForModal($infoResult, $carrier, $trackingNumber);
+                
+                return [
+                    'success' => true,
+                    'tracking_status' => $this->formatTrackingStatus($infoResult),
+                    'tracker_info' => $trackerInfo,
+                    'package_id' => $package->id,
+                    'message' => 'Статус отслеживания обновлен'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Трекер добавлен, но не удалось получить информацию'
+                ];
+            }
+        } catch (\Exception $e) {
+            Yii::error('Ошибка при проверке статуса отслеживания: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString(), 'claim');
+            return ['success' => false, 'message' => 'Ошибка при проверке статуса отслеживания: ' . $e->getMessage()];
+        }
+    }
+
+
+    /**
+     * Форматирует статус отслеживания из ответа API
+     */
+    private function formatTrackingStatus($trackerInfo)
+    {
+        if (!isset($trackerInfo['status'])) {
+            return 'Статус не определен';
+        }
+        
+        $status = $trackerInfo['status'];
+        
+        // Проверяем, что статус является строкой
+        if (is_array($status)) {
+            $status = isset($status['name']) ? $status['name'] : 'Неизвестный статус';
+        } elseif (!is_string($status)) {
+            $status = 'Неизвестный статус';
+        }
+        
+        // Маппинг статусов на русский язык
+        $statusMap = [
+            'created' => 'Отправление создано',
+            'accepted' => 'Отправление принято',
+            'in_transit' => 'Отправление в пути',
+            'out_for_delivery' => 'Отправление доставляется',
+            'delivered' => 'Отправление доставлено',
+            'exception' => 'Проблема с доставкой',
+            'returned' => 'Отправление возвращено',
+            'cancelled' => 'Отправление отменено'
+        ];
+        
+        return $statusMap[$status] ?? $status;
+    }
+
+    /**
+     * Форматирует информацию о трекере для отображения в модальном окне
+     * @param array $infoResult Результат от API
+     * @param string $carrier Перевозчик
+     * @param string $trackingNumber Номер отслеживания
+     * @return array
+     */
+    private function formatTrackerInfoForModal($infoResult, $carrier, $trackingNumber)
+    {
+        $trackerInfo = [
+            'tracking_number' => $trackingNumber,
+            'carrier' => $carrier,
+            'status' => $this->formatTrackingStatus($infoResult),
+            'last_update' => time() * 1000, // В миллисекундах для JavaScript
+        ];
+
+        // Добавляем информацию об отправителе и получателе
+        if (isset($infoResult['sender']) && is_array($infoResult['sender'])) {
+            $trackerInfo['sender'] = [
+                'name' => is_string($infoResult['sender']['name'] ?? null) ? $infoResult['sender']['name'] : 'Не указано',
+                'address' => is_string($infoResult['sender']['address'] ?? null) ? $infoResult['sender']['address'] : 'Не указано',
+                'phone' => is_string($infoResult['sender']['phone'] ?? null) ? $infoResult['sender']['phone'] : 'Не указано'
+            ];
+        }
+
+        if (isset($infoResult['recipient']) && is_array($infoResult['recipient'])) {
+            $trackerInfo['recipient'] = [
+                'name' => is_string($infoResult['recipient']['name'] ?? null) ? $infoResult['recipient']['name'] : 'Не указано',
+                'address' => is_string($infoResult['recipient']['address'] ?? null) ? $infoResult['recipient']['address'] : 'Не указано',
+                'phone' => is_string($infoResult['recipient']['phone'] ?? null) ? $infoResult['recipient']['phone'] : 'Не указано'
+            ];
+        }
+
+        // Добавляем даты
+        if (isset($infoResult['ship_date'])) {
+            $trackerInfo['ship_date'] = $infoResult['ship_date'];
+        }
+
+        if (isset($infoResult['estimated_delivery'])) {
+            $trackerInfo['estimated_delivery'] = $infoResult['estimated_delivery'];
+        }
+
+        // Добавляем историю статусов
+        if (isset($infoResult['history']) && is_array($infoResult['history'])) {
+            $trackerInfo['history'] = array_map(function($item) {
+                if (!is_array($item)) {
+                    return [
+                        'date' => time() * 1000,
+                        'status' => 'Неизвестный статус',
+                        'location' => null,
+                        'description' => null
+                    ];
+                }
+                
+                return [
+                    'date' => isset($item['date']) ? $item['date'] : time() * 1000,
+                    'status' => is_string($item['status'] ?? null) ? $item['status'] : 'Неизвестный статус',
+                    'location' => is_string($item['location'] ?? null) ? $item['location'] : null,
+                    'description' => is_string($item['description'] ?? null) ? $item['description'] : null
+                ];
+            }, $infoResult['history']);
+        }
+
+        return $trackerInfo;
+    }
+
+    /**
+     * Маппинг статуса из API на статус пакета
+     * @param array $apiResult Результат от API
+     * @return int
+     */
+    private function mapApiStatusToPackageStatus($apiResult)
+    {
+        if (!isset($apiResult['status'])) {
+            return Package::STATUS_PENDING;
+        }
+
+        $status = $apiResult['status'];
+        
+        // Если статус массив, берем name
+        if (is_array($status)) {
+            $status = $status['name'] ?? 'pending';
+        }
+
+        $statusMap = [
+            'created' => Package::STATUS_PENDING,
+            'pending' => Package::STATUS_PENDING,
+            'accepted' => Package::STATUS_ACCEPTED,
+            'in_transit' => Package::STATUS_IN_TRANSIT,
+            'out_for_delivery' => Package::STATUS_OUT_FOR_DELIVERY,
+            'delivered' => Package::STATUS_DELIVERED,
+            'exception' => Package::STATUS_EXCEPTION,
+            'returned' => Package::STATUS_RETURNED,
+            'cancelled' => Package::STATUS_CANCELLED,
+        ];
+
+        return $statusMap[$status] ?? Package::STATUS_PENDING;
+    }
+
 }
