@@ -7,7 +7,7 @@ use yii\widgets\DetailView;
 /* @var $model app\models\Buyer */
 
 $this->title = $model->getFullName();
-$this->params['breadcrumbs'][] = ['label' => 'Главная', 'url' => ['/purchases']];
+$this->params['breadcrumbs'][] = ['label' => 'Покупки', 'url' => ['/purchase/index']];
 $this->params['breadcrumbs'][] = ['label' => 'Покупатели', 'url' => ['/buyer/index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
@@ -19,7 +19,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 <div class="card">
                     <div class="card-header">
                         <div class="header-top">
-                            <?= Html::a('<i class="fas fa-arrow-left"></i> Назад к списку', ['index'], [
+                            <?= Html::a('<i class="fas fa-arrow-left"></i> Назад к списку', ['/purchase/index'], [
                                 'class' => 'btn btn-outline-light btn-sm back-btn'
                             ]) ?>
                         </div>

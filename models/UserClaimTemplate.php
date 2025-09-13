@@ -159,9 +159,9 @@ class UserClaimTemplate extends ActiveRecord
         // Данные товара
         $product = $purchase->product;
         $content = str_replace('{PRODUCT_NAME}', $product ? $product->title : '', $content);
-        $content = str_replace('{PRODUCT_MODEL}', '', $content);
+        $content = str_replace('{PRODUCT_MODEL}', $product ? $product->model : '', $content);
         $content = str_replace('{PRODUCT_SERIAL}', $product ? $product->serial_number : '', $content);
-        $content = str_replace('{PRODUCT_CATEGORY}', $product && $product->category ? $product->category->name : '', $content);
+        $content = str_replace('{PRODUCT_CATEGORY}', $product && $product->category ? $product->category->title : '', $content);
         
         // Данные покупки
         $content = str_replace('{PURCHASE_DATE}', $purchase->purchase_date ? Yii::$app->formatter->asDate($purchase->purchase_date, 'php:d.m.Y') : '', $content);

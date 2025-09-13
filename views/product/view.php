@@ -34,32 +34,11 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
         </div>
         
-        <div class="col-lg-4">
-            <div class="product-image-card">
-                <div class="card-header">
-                    <h3>
-                        <i class="fas fa-image"></i>
-                        Изображение товара
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="product-image-container">
-                        <img src="<?= $model->getImageUrl() ?>" 
-                             alt="<?= Html::encode($model->title) ?>" 
-                             class="product-image"
-                             onclick="openImageModal(this)">
-                        <div class="image-overlay">
-                            <i class="fas fa-search-plus"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Информация о товаре снизу -->
     <div class="row">
-        <div class="col-lg-8">
+        <div class="col-lg-6">
             <div class="product-table-card">
                 <div class="card-body">
                     <div class="product-info">
@@ -99,7 +78,7 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
         </div>
         
-        <div class="col-lg-4">
+        <div class="col-lg-6">
             <div class="product-stats">
                 <div class="stat-item">
                     <label>Всего покупок:</label>
@@ -166,28 +145,6 @@ $this->params['breadcrumbs'][] = $this->title;
     <?php endif; ?>
 </div>
 
-<!-- Модальное окно для просмотра изображения -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="imageModalLabel">Изображение товара</h5>
-                <button type="button" class="btn-close" onclick="closeImageModal()" aria-label="Закрыть">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" alt="" class="img-fluid">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeImageModal()">Закрыть</button>
-                <a id="downloadImage" href="" download class="btn btn-primary">
-                    <i class="fas fa-download"></i> Скачать
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
 .product-view {
@@ -399,49 +356,6 @@ $this->params['breadcrumbs'][] = $this->title;
     font-size: 1rem;
 }
 
-.product-image-container {
-    position: relative;
-    text-align: center;
-    border-radius: 10px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
-
-.product-image-container:hover {
-    transform: scale(1.02);
-}
-
-.product-image {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 10px;
-}
-
-.image-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    border-radius: 10px;
-}
-
-.product-image-container:hover .image-overlay {
-    opacity: 1;
-}
-
-.image-overlay i {
-    color: white;
-    font-size: 2rem;
-}
 
 .product-stats {
     background: #f8f9fa;
@@ -555,104 +469,6 @@ $this->params['breadcrumbs'][] = $this->title;
     opacity: 0.7;
 }
 
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1050;
-    display: none;
-}
-
-.modal.show {
-    display: block;
-}
-
-.modal-dialog {
-    position: relative;
-    width: auto;
-    max-width: 800px;
-    margin: 1.75rem auto;
-    pointer-events: none;
-}
-
-.modal-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    pointer-events: auto;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid rgba(0,0,0,.2);
-    border-radius: 0.3rem;
-    outline: 0;
-}
-
-.modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 1rem 1rem;
-    border-bottom: 1px solid #dee2e6;
-    border-top-left-radius: calc(0.3rem - 1px);
-    border-top-right-radius: calc(0.3rem - 1px);
-}
-
-.modal-title {
-    margin-bottom: 0;
-    line-height: 1.5;
-}
-
-.btn-close {
-    padding: 0.25rem 0.25rem;
-    margin: -0.25rem -0.25rem -0.25rem auto;
-    background: transparent;
-    border: 0;
-    border-radius: 0.25rem;
-    opacity: 0.5;
-    cursor: pointer;
-}
-
-.btn-close:hover {
-    opacity: 0.75;
-}
-
-.modal-body {
-    position: relative;
-    flex: 1 1 auto;
-    padding: 1rem;
-}
-
-.modal-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0.75rem;
-    border-top: 1px solid #dee2e6;
-    border-bottom-right-radius: calc(0.3rem - 1px);
-    border-bottom-left-radius: calc(0.3rem - 1px);
-}
-
-.modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1040;
-    width: 100vw;
-    height: 100vh;
-    background-color: #000;
-}
-
-.modal-backdrop.fade {
-    opacity: 0;
-}
-
-.modal-backdrop.show {
-    opacity: 0.5;
-}
 
 @media (max-width: 768px) {
     .dashboard-title {
@@ -687,60 +503,3 @@ $this->params['breadcrumbs'][] = $this->title;
 }
 </style>
 
-<script>
-function openImageModal(img) {
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById('modalImage');
-    const downloadLink = document.getElementById('downloadImage');
-    
-    modalImg.src = img.src;
-    modalImg.alt = img.alt;
-    downloadLink.href = img.src;
-    downloadLink.download = img.alt + '.jpg';
-    
-    modal.style.display = 'block';
-    modal.classList.add('show');
-    document.body.classList.add('modal-open');
-    
-    // Add backdrop
-    const existingBackdrop = document.getElementById('imageModalBackdrop');
-    if (existingBackdrop) {
-        existingBackdrop.remove();
-    }
-    
-    const backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop fade show';
-    backdrop.id = 'imageModalBackdrop';
-    backdrop.style.position = 'fixed';
-    backdrop.style.top = '0';
-    backdrop.style.left = '0';
-    backdrop.style.width = '100%';
-    backdrop.style.height = '100%';
-    backdrop.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    backdrop.style.zIndex = '1040';
-    document.body.appendChild(backdrop);
-    
-    // Close on backdrop click
-    backdrop.addEventListener('click', closeImageModal);
-}
-
-function closeImageModal() {
-    const modal = document.getElementById('imageModal');
-    modal.style.display = 'none';
-    modal.classList.remove('show');
-    document.body.classList.remove('modal-open');
-    
-    // Remove backdrop
-    const backdrop = document.getElementById('imageModalBackdrop');
-    if (backdrop) {
-        backdrop.remove();
-    }
-}
-
-// Close modal on Escape
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeImageModal();
-    }
-});
-</script>

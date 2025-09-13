@@ -8,7 +8,7 @@ use app\models\Seller;
 /* @var $model app\models\Seller */
 
 $this->title = 'Карточка продавца: ' . $model->title;
-$this->params['breadcrumbs'][] = ['label' => 'Главная', 'url' => ['/purchases']];
+$this->params['breadcrumbs'][] = ['label' => 'Покупки', 'url' => ['/purchase/index']];
 $this->params['breadcrumbs'][] = ['label' => 'Продавцы', 'url' => ['/seller/index']];
 $this->params['breadcrumbs'][] = $model->title;
 ?>
@@ -29,7 +29,7 @@ $this->params['breadcrumbs'][] = $model->title;
                     </div>
                     <div class="card-actions">
                         <?= Html::a('<i class="fas fa-edit"></i> Редактировать', ['update', 'id' => $model->id], ['class' => 'btn btn-outline-primary']) ?>
-                        <?= Html::a('<i class="fas fa-arrow-left"></i> Назад к списку', ['/dashboard'], ['class' => 'btn btn-outline-secondary']) ?>
+                        <?= Html::a('<i class="fas fa-arrow-left"></i> Назад к списку', ['/purchase/index'], ['class' => 'btn btn-outline-secondary']) ?>
                     </div>
                 </div>
                 
@@ -114,7 +114,7 @@ $this->params['breadcrumbs'][] = $model->title;
                             
                             <?php if (count($model->purchases) > 5): ?>
                                 <div class="text-center mt-3">
-                                    <?= Html::a('Показать все покупки', ['/dashboard'], ['class' => 'btn btn-outline-primary btn-sm']) ?>
+                                    <?= Html::a('Показать все покупки', ['/purchase/index'], ['class' => 'btn btn-outline-primary btn-sm']) ?>
                                 </div>
                             <?php endif; ?>
                         </div>

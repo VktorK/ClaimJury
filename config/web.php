@@ -88,6 +88,14 @@ $config = [
                 'claim/delete-user-template' => 'claim/delete-user-template',
                 'claim/toggle-favorite-template' => 'claim/toggle-favorite-template',
                 'claim/check-tracking' => 'claim/check-tracking',
+                'claim/debug-tracking' => 'claim/debug-tracking',
+                'claim-templates' => 'claim-template/index',
+                'claim-template/create' => 'claim-template/create',
+                'claim-template/view/<id:\d+>' => 'claim-template/view',
+                'claim-template/update/<id:\d+>' => 'claim-template/update',
+                'claim-template/delete/<id:\d+>' => 'claim-template/delete',
+                'claim-template/preview/<id:\d+>' => 'claim-template/preview',
+                'claim-template/get-placeholders' => 'claim-template/get-placeholders'
             ],
         ],
         'log' => [

@@ -8,29 +8,23 @@ use yii\behaviors\TimestampBehavior;
 use yii\helpers\Url;
 
 /**
- * This is the model class for table "blog_categories".
+ * This is the model class for table "categories".
  *
  * @property int $id
- * @property string $name
- * @property string $slug
- * @property string $description
- * @property int $status
+ * @property string $title
  * @property int $created_at
  * @property int $updated_at
  *
- * @property Article[] $articles
+ * @property Product[] $products
  */
 class Category extends ActiveRecord
 {
-    const STATUS_INACTIVE = 0;
-    const STATUS_ACTIVE = 1;
-
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'blog_categories';
+        return '{{%categories}}';
     }
 
     /**
@@ -49,12 +43,8 @@ class Category extends ActiveRecord
     public function rules()
     {
         return [
-            [['name', 'slug'], 'required'],
-            [['description'], 'string'],
-            [['status'], 'integer'],
-            [['name', 'slug'], 'string', 'max' => 255],
-            [['slug'], 'unique'],
-            [['status'], 'default', 'value' => self::STATUS_ACTIVE],
+            [['title'], 'required'],
+            [['title'], 'string', 'max' => 255],
         ];
     }
 
@@ -65,10 +55,7 @@ class Category extends ActiveRecord
     {
         return [
             'id' => 'ID',
-            'name' => 'Название',
-            'slug' => 'URL-адрес',
-            'description' => 'Описание',
-            'status' => 'Статус',
+            'title' => 'Название',
             'created_at' => 'Дата создания',
             'updated_at' => 'Дата обновления',
         ];
@@ -77,25 +64,24 @@ class Category extends ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getArticles()
+    public function getProducts()
     {
-        return $this->hasMany(Article::className(), ['category_id' => 'id'])
-            ->where(['status' => Article::STATUS_PUBLISHED]);
+        return $this->hasMany(Product::class, ['category_id' => 'id']);
     }
 
     /**
-     * Получить количество статей в категории
+     * Получить количество товаров в категории
      */
-    public function getArticlesCount()
+    public function getProductsCount()
     {
-        return $this->getArticles()->count();
+        return $this->getProducts()->count();
     }
 
     /**
-     * Получить URL категории
+     * Получить отформатированную дату создания
      */
-    public function getUrl()
+    public function getFormattedCreatedDate()
     {
-        return Url::to(['/blog/category', 'slug' => $this->slug]);
+        return date('d.m.Y H:i', $this->created_at);
     }
 }

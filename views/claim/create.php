@@ -91,6 +91,10 @@ $this->params['breadcrumbs'][] = $this->title;
                         
                         <!-- Скрытое поле для сохранения шаблона в претензии -->
                         <?= Html::hiddenInput('Claim[description]', '', ['id' => 'claim-description-hidden']) ?>
+                        <div id="debug-info" style="display: none; background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
+                            <strong>Отладочная информация:</strong><br>
+                            <span id="debug-content"></span>
+                        </div>
                         <div class="mt-2">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle"></i> 
@@ -918,6 +922,28 @@ select option {
     
     /* Удалены стили для подписи */
 }
+
+/* Стили для подсветки ошибок */
+.field-error {
+    border: 2px solid #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+    font-weight: 500;
+}
+
+.error-message.show {
+    display: block;
+}
+
+.error-message i {
+    margin-right: 5px;
+}
 </style>
 
 <script>
@@ -1044,10 +1070,98 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         hiddenField.value = content;
         
+        console.log('Описание сохранено из модального окна:', content.substring(0, 100) + '...');
+        
         // Закрываем модальное окно
         const modal = bootstrap.Modal.getInstance(document.getElementById('descriptionModal'));
         modal.hide();
     };
+
+    // Обработчик отправки формы - сохраняем все данные перед отправкой
+    document.querySelector('form').addEventListener('submit', function(e) {
+        console.log('Форма отправляется...');
+        
+        // Получаем содержимое из Word-редактора, если модальное окно было открыто
+        const wordEditor = document.getElementById('word-editor');
+        if (wordEditor && wordEditor.innerHTML.trim() !== '') {
+            const content = wordEditor.innerHTML;
+            
+            // Обновляем скрытое поле
+            let hiddenField = document.getElementById('claim-description-hidden');
+            if (!hiddenField) {
+                hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = 'Claim[description]';
+                hiddenField.id = 'claim-description-hidden';
+                document.querySelector('form').appendChild(hiddenField);
+            }
+            hiddenField.value = content;
+            
+            console.log('Содержимое претензии сохранено из Word-редактора:', content.substring(0, 100) + '...');
+        }
+        
+        // Также проверяем содержимое из превью, если модальное окно не открывалось
+        const previewContent = descriptionPreview.querySelector('p').textContent;
+        if (previewContent && previewContent !== 'Описание не заполнено' && previewContent.trim() !== '') {
+            let hiddenField = document.getElementById('claim-description-hidden');
+            if (!hiddenField) {
+                hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = 'Claim[description]';
+                hiddenField.id = 'claim-description-hidden';
+                document.querySelector('form').appendChild(hiddenField);
+            }
+            
+            // Если поле пустое, заполняем его содержимым из превью
+            if (!hiddenField.value || hiddenField.value.trim() === '') {
+                hiddenField.value = previewContent.replace(/\n/g, '<br>');
+                console.log('Содержимое претензии взято из превью:', previewContent.substring(0, 100) + '...');
+            }
+        }
+        
+        // Проверяем все скрытые поля в форме
+        const allHiddenFields = document.querySelectorAll('form input[type="hidden"]');
+        console.log('Все скрытые поля в форме:');
+        allHiddenFields.forEach(field => {
+            console.log(`  ${field.name}: ${field.value.substring(0, 50)}...`);
+        });
+        
+        const finalDescription = document.getElementById('claim-description-hidden')?.value;
+        console.log('Финальное содержимое поля description:', finalDescription ? finalDescription.substring(0, 100) + '...' : 'НЕТ');
+        
+        // Дополнительная проверка - убеждаемся, что поле есть в форме
+        if (!finalDescription || finalDescription.trim() === '') {
+            console.warn('ВНИМАНИЕ: Поле description пустое!');
+            // Попробуем найти содержимое в других местах
+            const alternativeContent = wordEditor?.innerHTML || descriptionPreview.querySelector('p')?.textContent;
+            if (alternativeContent && alternativeContent.trim() !== '') {
+                console.log('Найдено альтернативное содержимое:', alternativeContent.substring(0, 100) + '...');
+                let hiddenField = document.getElementById('claim-description-hidden');
+                if (!hiddenField) {
+                    hiddenField = document.createElement('input');
+                    hiddenField.type = 'hidden';
+                    hiddenField.name = 'Claim[description]';
+                    hiddenField.id = 'claim-description-hidden';
+                    document.querySelector('form').appendChild(hiddenField);
+                }
+                hiddenField.value = alternativeContent.replace(/\n/g, '<br>');
+                console.log('Альтернативное содержимое сохранено в поле description');
+            }
+        }
+        
+        // Показываем отладочную информацию на странице
+        const debugInfo = document.getElementById('debug-info');
+        const debugContent = document.getElementById('debug-content');
+        if (debugInfo && debugContent) {
+            debugInfo.style.display = 'block';
+            debugContent.innerHTML = `
+                <strong>Содержимое поля description:</strong> ${finalDescription ? finalDescription.substring(0, 200) + '...' : 'НЕТ'}<br>
+                <strong>Всего скрытых полей:</strong> ${allHiddenFields.length}<br>
+                <strong>Word-редактор содержит:</strong> ${wordEditor?.innerHTML?.length || 0} символов<br>
+                <strong>Превью содержит:</strong> ${previewContent?.length || 0} символов
+            `;
+        }
+    });
 
     // Функция для форматирования текста в Word-редакторе
     window.formatText = function(command, value) {
@@ -1121,6 +1235,14 @@ document.addEventListener('DOMContentLoaded', function() {
             wordEditor.addEventListener('input', function() {
                 updateToolbarState();
                 checkEditorContent();
+                
+                // Автоматически сохраняем изменения в скрытое поле
+                const content = wordEditor.innerHTML;
+                const hiddenField = document.getElementById('claim-description-hidden');
+                if (hiddenField && content.trim() !== '') {
+                    hiddenField.value = content;
+                    console.log('Содержимое автоматически сохранено в скрытое поле');
+                }
             });
             wordEditor.addEventListener('selectionchange', updateToolbarState);
             wordEditor.addEventListener('keyup', updateToolbarState);
@@ -1293,7 +1415,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="repairQuestionModalLabel">Информация о товаре</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="alert alert-info">
@@ -1328,6 +1449,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="mb-3">
                                     <label for="repairDefectDescription" class="form-label">Недостаток согласно акту выполненных работ</label>
                                     <textarea class="form-control" id="repairDefectDescription" rows="3" placeholder="Опишите недостаток согласно акту выполненных работ"></textarea>
+                                    <div class="error-message" id="repairDefectDescription-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Поле не может быть пустым
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1336,6 +1461,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="mb-3">
                                     <label for="currentDefectDescription" class="form-label">Опишите текущий недостаток</label>
                                     <textarea class="form-control" id="currentDefectDescription" rows="3" placeholder="Опишите текущий недостаток товара"></textarea>
+                                    <div class="error-message" id="currentDefectDescription-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Поле не может быть пустым
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1356,8 +1485,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Добавляем новое модальное окно
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         
-        // Показываем модальное окно
-        const modal = new bootstrap.Modal(document.getElementById('repairQuestionModal'));
+        // Показываем модальное окно (отключаем закрытие по клику вне области и по Escape)
+        const modal = new bootstrap.Modal(document.getElementById('repairQuestionModal'), {
+            backdrop: 'static',
+            keyboard: false
+        });
         modal.show();
         
         // Обработчик изменения радио кнопок
@@ -1375,14 +1507,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+        
+        // Обработчики для автоматического скрытия ошибок при вводе
+        const textareaFields = ['currentDefectDescription', 'repairDefectDescription'];
+        textareaFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    hideFieldError(fieldId);
+                });
+            }
+        });
+    }
+
+    // Функции для работы с ошибками валидации
+    function showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        const errorElement = document.getElementById(fieldId + '-error');
+        
+        if (field && errorElement) {
+            field.classList.add('field-error');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+    }
+    
+    function hideFieldError(fieldId) {
+        const field = document.getElementById(fieldId);
+        const errorElement = document.getElementById(fieldId + '-error');
+        
+        if (field && errorElement) {
+            field.classList.remove('field-error');
+            errorElement.classList.remove('show');
+        }
+    }
+    
+    function clearAllErrors() {
+        // Очищаем все ошибки в модальных окнах
+        const errorFields = ['currentDefectDescription', 'repairDefectDescription', 'defectDescription'];
+        errorFields.forEach(fieldId => {
+            hideFieldError(fieldId);
+        });
     }
 
     // Функция для обработки вопроса о ремонте
     window.handleRepairQuestion = function() {
+        // Очищаем все предыдущие ошибки
+        clearAllErrors();
+        
         const selectedRepair = document.querySelector('input[name="wasRepaired"]:checked');
         
         if (!selectedRepair) {
-            console.error('Пожалуйста, выберите один из вариантов');
+            alert('Пожалуйста, выберите один из вариантов');
             return;
         }
         
@@ -1395,6 +1571,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Определяем описание недостатка в зависимости от выбора
         const defectDescription = wasRepairedOfficially ? repairDefectDescription : currentDefectDescription;
+        const fieldId = wasRepairedOfficially ? 'repairDefectDescription' : 'currentDefectDescription';
+        
+        // Валидация: проверяем, что описание недостатка не пустое
+        if (!defectDescription || defectDescription.trim() === '') {
+            showFieldError(fieldId, 'Поле не может быть пустым');
+            return;
+        }
         
         // Сохраняем информацию о ремонте
         saveRepairInfo(purchaseId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription);
@@ -1415,7 +1598,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="defectProofModalLabel">Доказательства недостатка</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="alert alert-info">
@@ -1478,6 +1660,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="mb-3">
                                     <label for="defectDescription" class="form-label">Краткое описание текущего недостатка</label>
                                     <textarea class="form-control" id="defectDescription" rows="3" placeholder="Опишите текущий недостаток товара"></textarea>
+                                    <div class="error-message" id="defectDescription-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Поле не может быть пустым
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1498,8 +1684,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Добавляем новое модальное окно
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         
-        // Показываем модальное окно
-        const modal = new bootstrap.Modal(document.getElementById('defectProofModal'));
+        // Показываем модальное окно (отключаем закрытие по клику вне области и по Escape)
+        const modal = new bootstrap.Modal(document.getElementById('defectProofModal'), {
+            backdrop: 'static',
+            keyboard: false
+        });
         modal.show();
         
         // Обработчик изменения радио кнопок
@@ -1537,14 +1726,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+        
+        // Обработчик для автоматического скрытия ошибок при вводе
+        const defectDescriptionField = document.getElementById('defectDescription');
+        if (defectDescriptionField) {
+            defectDescriptionField.addEventListener('input', function() {
+                hideFieldError('defectDescription');
+            });
+        }
     };
 
     // Функция для обработки выбора доказательства недостатка
     window.handleDefectProofSelection = function() {
+        // Очищаем все предыдущие ошибки
+        clearAllErrors();
+        
         const selectedProof = document.querySelector('input[name="defect_proof"]:checked');
         
         if (!selectedProof) {
-            console.error('Пожалуйста, выберите один из вариантов');
+            alert('Пожалуйста, выберите один из вариантов');
             return;
         }
         
@@ -1553,7 +1753,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (similarityQuestion.style.display !== 'none') {
             const selectedSimilarity = document.querySelector('input[name="defect_similarity"]:checked');
             if (!selectedSimilarity) {
-                console.error('Пожалуйста, ответьте на вопрос о схожести недостатка');
+                alert('Пожалуйста, ответьте на вопрос о схожести недостатка');
                 return;
             }
         }
@@ -1570,6 +1770,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedSimilarity && selectedSimilarity.value === '0') {
             // Если выбрано "Нет", берем описание из поля
             defectDescription = document.getElementById('defectDescription').value;
+            
+            // Валидация: проверяем, что описание недостатка не пустое
+            if (!defectDescription || defectDescription.trim() === '') {
+                showFieldError('defectDescription', 'Поле не может быть пустым');
+                return;
+            }
         }
         // Если выбрано "Да", defectDescription остается пустым
         
@@ -1727,6 +1933,12 @@ document.addEventListener('DOMContentLoaded', function() {
             templateSelect.innerHTML = '<option value="">Выберите шаблон...</option>';
             descriptionGroup.style.display = 'block';
             updateDescriptionPreview('');
+            
+            // Очищаем скрытое поле для "Свой вариант"
+            const hiddenField = document.getElementById('claim-description-hidden');
+            if (hiddenField) {
+                hiddenField.value = '';
+            }
         } else {
             // Скрыть все для пустого выбора
             templateSelector.style.display = 'none';
@@ -1774,9 +1986,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const purchaseId = purchaseSelect.value;
         
         if (!templateId || !purchaseId) {
-            // Если шаблон не выбран, скрыть описание
+            // Если шаблон не выбран, скрыть описание и очистить скрытое поле
             descriptionGroup.style.display = 'none';
             updateDescriptionPreview('');
+            
+            // Очищаем скрытое поле
+            const hiddenField = document.getElementById('claim-description-hidden');
+            if (hiddenField) {
+                hiddenField.value = '';
+            }
             return;
         }
 
@@ -1799,9 +2017,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Проверяем содержимое после загрузки шаблона
                         checkEditorContent();
                     }
+                    
+                    // ВАЖНО: Сохраняем содержимое шаблона в скрытое поле сразу после загрузки
+                    const hiddenField = document.getElementById('claim-description-hidden');
+                    if (hiddenField) {
+                        // Сохраняем HTML для передачи в форму (будет конвертирован в текст на сервере)
+                        hiddenField.value = htmlContent;
+                        console.log('Шаблон сохранен в скрытое поле:', htmlContent.substring(0, 100) + '...');
+                    } else {
+                        console.error('Скрытое поле не найдено!');
+                    }
                 } else {
                     console.error('Ошибка загрузки шаблона: ' + data.message);
                     updateDescriptionPreview('');
+                    
+                    // Очищаем скрытое поле при ошибке
+                    const hiddenField = document.getElementById('claim-description-hidden');
+                    if (hiddenField) {
+                        hiddenField.value = '';
+                    }
                 }
                 
                 // Применить стили после загрузки содержимого
@@ -1809,6 +2043,12 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Ошибка загрузки шаблона:', error);
+                
+                // Очищаем скрытое поле при ошибке
+                const hiddenField = document.getElementById('claim-description-hidden');
+                if (hiddenField) {
+                    hiddenField.value = '';
+                }
             })
             .finally(() => {
                 // Убираем индикатор загрузки

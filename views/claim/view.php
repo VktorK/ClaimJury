@@ -61,24 +61,6 @@ $this->params['breadcrumbs'][] = $this->title;
                                 </div>
                             <?php endif; ?>
                             
-                            <?php if ($model->description): ?>
-                                <div class="info-item full-width">
-                                    <label>Образец претензии:</label>
-                                    <div class="claim-template-section">
-                                        <div class="template-preview" id="template-preview">
-                                            <div class="template-content"><?= nl2br(Html::encode($model->description)) ?></div>
-                                        </div>
-                                        <div class="template-actions">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="openTemplateModal()">
-                                                <i class="fas fa-edit"></i> Редактировать
-                                            </button>
-                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="downloadClaimTemplate()">
-                                                <i class="fas fa-file-word"></i> Скачать в Word
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
                             
                             <?php if ($model->resolution_notes): ?>
                                 <div class="info-item full-width">
@@ -91,16 +73,54 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
             </div>
             
+            <!-- Секция с текстом претензии -->
+            <div class="claim-text-card">
+                <div class="card-header collapsible-header" onclick="toggleClaimText()">
+                    <h3>
+                        <i class="fas fa-file-text"></i>
+                        Претензия
+                        <i class="fas fa-chevron-down collapse-icon"></i>
+                    </h3>
+                </div>
+                <div class="card-body" id="claim-text-body">
+                    <div class="claim-text-section">
+                        <div class="claim-text-preview" id="claim-text-preview">
+                            <div class="claim-text-content">
+                                <?php if ($model->description): ?>
+                                    <?= $model->description ?>
+                                <?php else: ?>
+                                    <div class="empty-state">
+                                        <i class="fas fa-file-text"></i>
+                                        <p>Текст претензии не заполнен</p>
+                                        <small>Нажмите "Редактировать" чтобы добавить текст претензии</small>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="claim-text-actions">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="openClaimTextModal()">
+                                <i class="fas fa-edit"></i> Редактировать
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="downloadClaimText()" <?= !$model->description ? 'disabled' : '' ?>>
+                                <i class="fas fa-file-word"></i> Скачать в Word
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Секция с информацией о ремонте и доказательствах -->
             <?php if ($model->purchase): ?>
                 <div class="repair-info-card">
-                    <div class="card-header">
+                    <div class="card-header collapsible-header" onclick="toggleRepairInfo()">
                         <h3>
                             <i class="fas fa-tools"></i>
                             Информация о ремонте и доказательствах
+                            <i class="fas fa-chevron-down collapse-icon"></i>
                         </h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" id="repair-info-body">
                         <div class="repair-info-grid">
                             <!-- Информация о ремонте -->
                             <div class="repair-section">
@@ -261,30 +281,110 @@ $this->params['breadcrumbs'][] = $this->title;
     </div>
 </div>
 
-<!-- Модальное окно для редактирования шаблона претензии -->
-<div class="modal fade" id="templateModal" tabindex="-1" aria-labelledby="templateModalLabel" aria-hidden="true">
+<!-- Модальное окно для редактирования текста претензии -->
+<div class="modal fade" id="claimTextModal" tabindex="-1" aria-labelledby="claimTextModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="templateModalLabel">
-                    <i class="fas fa-edit"></i> Редактирование образца претензии
+                <h5 class="modal-title" id="claimTextModalLabel">
+                    <i class="fas fa-edit"></i> Редактирование текста претензии
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Панель инструментов Word-стиль -->
+                <div class="word-toolbar">
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('bold')" title="Жирный">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('italic')" title="Курсив">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('underline')" title="Подчеркнутый">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-separator"></div>
+                    
+                    <div class="toolbar-group">
+                        <select class="toolbar-select" onchange="formatClaimText('fontSize', this.value)" title="Размер шрифта">
+                            <option value="">Размер</option>
+                            <option value="12">12</option>
+                            <option value="14" selected>14</option>
+                            <option value="16">16</option>
+                            <option value="18">18</option>
+                            <option value="20">20</option>
+                        </select>
+                        
+                        <select class="toolbar-select" onchange="formatClaimText('fontFamily', this.value)" title="Шрифт">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                        </select>
+                    </div>
+                    
+                    <div class="toolbar-separator"></div>
+                    
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('justifyLeft')" title="По левому краю">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('justifyCenter')" title="По центру">
+                            <i class="fas fa-align-center"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('justifyRight')" title="По правому краю">
+                            <i class="fas fa-align-right"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('justifyFull')" title="По ширине">
+                            <i class="fas fa-align-justify"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-separator"></div>
+                    
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('insertUnorderedList')" title="Маркированный список">
+                            <i class="fas fa-list-ul"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('insertOrderedList')" title="Нумерованный список">
+                            <i class="fas fa-list-ol"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-separator"></div>
+                    
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-btn" onclick="insertClaimTextTab()" title="Вставить табуляцию (4 пробела)">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('indent')" title="Увеличить отступ">
+                            <i class="fas fa-indent"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatClaimText('outdent')" title="Уменьшить отступ">
+                            <i class="fas fa-outdent"></i>
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="word-editor-container">
-                    <div class="word-editor" id="word-editor" contenteditable="true" tabindex="-1" data-placeholder="Введите текст претензии...">
+                    <div class="word-editor" id="claim-text-editor" contenteditable="true" tabindex="-1" data-placeholder="Введите текст претензии...">
+                        <div class="loading-indicator" id="claim-text-loading" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i> Загрузка контента...
+                        </div>
                     </div>
                 </div>
                 
                 <div class="form-text mt-3">
                     <i class="fas fa-info-circle"></i> 
-                    Вы можете редактировать образец претензии
+                    Вы можете редактировать текст претензии с помощью панели инструментов выше
                 </div>
                 
                 <!-- Кнопка скачивания в модальном окне -->
                 <div class="mt-3 text-center">
-                    <button type="button" class="btn btn-outline-primary" onclick="downloadClaimTemplate()" id="modal-download-btn">
+                    <button type="button" class="btn btn-outline-primary" onclick="downloadClaimText()" id="claim-text-modal-download-btn">
                         <i class="fas fa-file-word"></i> Скачать в Word
                     </button>
                 </div>
@@ -293,13 +393,14 @@ $this->params['breadcrumbs'][] = $this->title;
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times"></i> Отмена
                 </button>
-                <button type="button" class="btn btn-success" onclick="saveClaimTemplate()">
+                <button type="button" class="btn btn-success" onclick="saveClaimText()">
                     <i class="fas fa-save"></i> Сохранить изменения
                 </button>
             </div>
         </div>
     </div>
 </div>
+
 
 <style>
 .claim-details-card,
@@ -329,8 +430,45 @@ $this->params['breadcrumbs'][] = $this->title;
     gap: 10px;
 }
 
+/* Стили для сворачиваемого заголовка */
+.collapsible-header {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.collapsible-header:hover {
+    background: linear-gradient(135deg, #e0a800 0%, #c47a00 100%);
+}
+
+.collapsible-header h3 {
+    justify-content: space-between;
+    width: 100%;
+}
+
+.collapse-icon {
+    transition: transform 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.collapse-icon.collapsed {
+    transform: rotate(-90deg);
+}
+
 .card-body {
     padding: 30px;
+    transition: max-height 0.3s ease, height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+    overflow: hidden;
+    max-height: none;
+    height: auto;
+    box-sizing: border-box;
+}
+
+.card-body.collapsed {
+    max-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    opacity: 0;
 }
 
 .info-grid {
@@ -566,19 +704,28 @@ $this->params['breadcrumbs'][] = $this->title;
 .badge-danger { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; }
 .badge-secondary { background: linear-gradient(135deg, #6B7280, #4B5563); color: white; }
 
-/* Стили для секции шаблона претензии */
-.claim-template-section {
+/* Стили для секции текста претензии */
+.claim-text-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.claim-text-section {
     background: #f8f9fa;
     border-radius: 10px;
     padding: 20px;
-    border-left: 4px solid #3B82F6;
+    border-left: 4px solid #10B981;
 }
 
-.template-preview {
+
+.claim-text-preview {
     margin-bottom: 15px;
 }
 
-.template-content {
+.claim-text-content {
     background: white;
     padding: 15px;
     border-radius: 8px;
@@ -588,16 +735,46 @@ $this->params['breadcrumbs'][] = $this->title;
     overflow-y: auto;
 }
 
-.template-actions {
+.claim-text-actions {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
 }
 
-.template-actions .btn {
+.claim-text-actions .btn {
     padding: 8px 16px;
     font-size: 0.9rem;
 }
+
+.claim-text-actions .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    color: #374151;
+}
+
+.empty-state small {
+    color: #9ca3af;
+    font-style: italic;
+}
+
 
 /* Стили для Word-редактора в модальном окне */
 .word-editor-container {
@@ -1090,57 +1267,221 @@ $this->params['breadcrumbs'][] = $this->title;
         grid-template-columns: 1fr;
     }
 }
+
+/* Стили для панели инструментов Word-редактора */
+.word-toolbar {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px 8px 0 0;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 24px;
+    background: #dee2e6;
+    margin: 0 5px;
+}
+
+.toolbar-btn {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.toolbar-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    color: #212529;
+}
+
+.toolbar-btn.active {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.toolbar-select {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 13px;
+    color: #495057;
+    cursor: pointer;
+    min-width: 80px;
+}
+
+.toolbar-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Стили для индикатора загрузки */
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #6c757d;
+    font-size: 14px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.loading-indicator i {
+    margin-right: 8px;
+    font-size: 16px;
+}
 </style>
 
 <script>
-// Функция для открытия модального окна редактирования шаблона
-function openTemplateModal() {
-    const wordEditor = document.getElementById('word-editor');
-    const templateContent = document.querySelector('.template-content').textContent;
+// Функция для открытия модального окна редактирования текста претензии
+function openClaimTextModal() {
+    const wordEditor = document.getElementById('claim-text-editor');
+    const loadingIndicator = document.getElementById('claim-text-loading');
+    const claimTextContent = document.querySelector('.claim-text-content');
     
-    if (wordEditor) {
-        // Заполняем редактор содержимым шаблона
-        wordEditor.innerHTML = templateContent.replace(/\n/g, '<br>');
+    if (wordEditor && claimTextContent) {
+        console.log('Открытие модального окна редактирования');
         
-        const modal = new bootstrap.Modal(document.getElementById('templateModal'));
+        // Показываем индикатор загрузки
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+        }
+        
+        // Очищаем редактор
+        wordEditor.innerHTML = '';
+        
+        // Показываем модальное окно сразу
+        const modal = new bootstrap.Modal(document.getElementById('claimTextModal'));
         modal.show();
         
-        // Фокусируемся на редакторе после открытия модального окна
-        setTimeout(() => {
-            wordEditor.focus();
-        }, 300);
+        // Загружаем HTML контент через AJAX
+        fetch('/claim/get-claim-html?id=<?= $model->id ?>', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Получен HTML контент:', data);
+            
+            // Скрываем индикатор загрузки
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            if (data.success) {
+                // Загружаем HTML в редактор
+                if (data.html && data.html.trim() !== '') {
+                    wordEditor.innerHTML = data.html;
+                    console.log('HTML загружен в редактор:', data.html.substring(0, 100) + '...');
+                } else {
+                    wordEditor.innerHTML = '';
+                    console.log('HTML контент пустой');
+                }
+                
+                // Фокусируемся на редакторе и обновляем панель инструментов
+                setTimeout(() => {
+                    wordEditor.focus();
+                    updateClaimTextToolbarState();
+                }, 100);
+            } else {
+                console.error('Ошибка загрузки HTML:', data.message);
+                wordEditor.innerHTML = '';
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки HTML контента:', error);
+            
+            // Скрываем индикатор загрузки при ошибке
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            wordEditor.innerHTML = '';
+        });
     }
 }
 
-// Функция для сохранения изменений шаблона
-function saveClaimTemplate() {
-    const wordEditor = document.getElementById('word-editor');
+
+// Функция для сохранения изменений текста претензии
+function saveClaimText() {
+    const wordEditor = document.getElementById('claim-text-editor');
     const content = wordEditor ? wordEditor.innerHTML : '';
     
-    if (!content || content.trim() === '') {
-        return;
-    }
+    console.log('Сохранение текста претензии:', content.substring(0, 100) + '...');
     
-    // Конвертируем HTML в простой текст
+    // Конвертируем HTML в простой текст для отображения
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
     
     // Обновляем превью
-    const templateContent = document.querySelector('.template-content');
-    if (templateContent) {
-        templateContent.innerHTML = textContent.replace(/\n/g, '<br>');
+    const claimTextContent = document.querySelector('.claim-text-content');
+    const downloadBtn = document.querySelector('.claim-text-actions .btn[onclick="downloadClaimText()"]');
+    
+    if (claimTextContent) {
+        if (textContent.trim() === '') {
+            // Если содержимое пустое, показываем пустое состояние
+            claimTextContent.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-file-text"></i>
+                    <p>Текст претензии не заполнен</p>
+                    <small>Нажмите "Редактировать" чтобы добавить текст претензии</small>
+                </div>
+            `;
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+            }
+        } else {
+            // Если есть содержимое, показываем HTML с форматированием
+            claimTextContent.innerHTML = content; // Используем HTML напрямую
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+            }
+        }
     }
     
-    // Отправляем AJAX запрос для сохранения
+    // Отправляем AJAX запрос для сохранения (отправляем HTML для сохранения форматирования)
     const formData = new FormData();
-    formData.append('description', textContent);
+    formData.append('description', content); // Отправляем HTML, а не текст
     
     // Добавляем CSRF токен
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (csrfToken) {
         formData.append('_csrf', csrfToken.getAttribute('content'));
     }
+    
+    console.log('Отправка данных на сервер:', {
+        description: content.substring(0, 100) + '...',
+        csrf: csrfToken ? csrfToken.getAttribute('content') : 'НЕТ'
+    });
     
     fetch('/claim/update-template?id=<?= $model->id ?>', {
         method: 'POST',
@@ -1149,38 +1490,55 @@ function saveClaimTemplate() {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Ответ сервера:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Данные ответа:', data);
         if (data.success) {
+            // Показываем уведомление об успешном сохранении
+            alert('Текст претензии успешно сохранен!');
+            
             // Закрываем модальное окно
-            const modal = bootstrap.Modal.getInstance(document.getElementById('templateModal'));
+            const modal = bootstrap.Modal.getInstance(document.getElementById('claimTextModal'));
             if (modal) {
                 modal.hide();
             }
         } else {
-            console.error('Ошибка сохранения шаблона:', data.message);
+            console.error('Ошибка сохранения текста претензии:', data.message);
+            alert('Ошибка при сохранении: ' + (data.message || 'Неизвестная ошибка'));
         }
     })
     .catch(error => {
-        console.error('Ошибка сохранения шаблона:', error);
+        console.error('Ошибка сохранения текста претензии:', error);
+        alert('Ошибка при сохранении: ' + error.message);
     });
 }
 
-// Функция для скачивания шаблона претензии
-async function downloadClaimTemplate() {
-    const wordEditor = document.getElementById('word-editor');
-    const templateContent = document.querySelector('.template-content');
+
+// Функция для скачивания текста претензии
+async function downloadClaimText() {
+    const wordEditor = document.getElementById('claim-text-editor');
+    const claimTextContent = document.querySelector('.claim-text-content');
     
     let content = '';
     if (wordEditor && wordEditor.innerHTML.trim() !== '') {
         // Если модальное окно открыто, берем содержимое из редактора
         content = wordEditor.innerHTML;
-    } else if (templateContent) {
+    } else if (claimTextContent) {
         // Иначе берем содержимое из превью
-        content = templateContent.textContent || templateContent.innerText || '';
+        content = claimTextContent.textContent || claimTextContent.innerText || '';
+        
+        // Проверяем, не пустое ли это состояние
+        if (content.includes('Текст претензии не заполнен')) {
+            alert('Текст претензии не заполнен. Сначала добавьте текст претензии.');
+            return;
+        }
     }
     
     if (!content || content.trim() === '') {
+        alert('Текст претензии не заполнен. Сначала добавьте текст претензии.');
         return;
     }
     
@@ -1194,7 +1552,8 @@ async function downloadClaimTemplate() {
         // Создаем FormData для отправки на сервер
         const formData = new FormData();
         formData.append('content', content);
-        formData.append('claim_id', '<?= $model->id ?>');
+        formData.append('purchase_id', '<?= $model->purchase ? $model->purchase->id : "" ?>');
+        formData.append('claim_type', '<?= $model->claim_type ?: "custom" ?>');
         
         // Добавляем CSRF токен
         const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -1220,7 +1579,7 @@ async function downloadClaimTemplate() {
         
         // Получаем имя файла из заголовков ответа
         const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = `claim_<?= $model->id ?>_${new Date().toISOString().split('T')[0]}.docx`;
+        let filename = `claim_text_<?= $model->id ?>_${new Date().toISOString().split('T')[0]}.docx`;
         
         if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename="(.+)"/);
@@ -1248,23 +1607,6 @@ async function downloadClaimTemplate() {
     }
 }
 
-// Функция для обновления шаблона с новыми данными
-function updateTemplateWithNewData() {
-    const templateContent = document.querySelector('.template-content');
-    if (!templateContent) return;
-    
-    // Получаем текущий контент
-    let content = templateContent.textContent || templateContent.innerText || '';
-    
-    // Заменяем плейсхолдеры на актуальные данные
-    content = content.replace(/{REPAIR_DEFECT_DESCRIPTION}/g, '<?= $model->purchase ? Html::encode($model->purchase->repair_defect_description ?: '') : '' ?>');
-    content = content.replace(/{CURRENT_DEFECT_DESCRIPTION}/g, '<?= $model->purchase ? Html::encode($model->purchase->current_defect_description ?: '') : '' ?>');
-    content = content.replace(/{EXPERTISE_DEFECT_DESCRIPTION}/g, '<?= $model->purchase ? Html::encode($model->purchase->expertise_defect_description ?: '') : '' ?>');
-    content = content.replace(/{GENERAL_DEFECT_DESCRIPTION}/g, '<?= $model->purchase ? Html::encode($model->purchase->general_defect_description ?: '') : '' ?>');
-    
-    // Обновляем отображение
-    templateContent.innerHTML = content.replace(/\n/g, '<br>');
-}
 
 // Функция для проверки статуса отслеживания
 window.checkTrackingStatus = async function() {
@@ -1335,6 +1677,151 @@ window.checkTrackingStatus = async function() {
         button.disabled = false;
     }
 }
+
+// Функция для сворачивания/разворачивания секции информации о ремонте
+function toggleRepairInfo() {
+    const body = document.getElementById('repair-info-body');
+    const icon = document.querySelector('.repair-info-card .collapse-icon');
+    
+    if (body && icon) {
+        if (body.classList.contains('collapsed')) {
+            // Разворачиваем
+            body.classList.remove('collapsed');
+            icon.classList.remove('collapsed');
+            
+            // Получаем реальную высоту содержимого
+            body.style.maxHeight = 'none';
+            body.style.height = 'auto';
+            const realHeight = body.scrollHeight;
+            
+            // Начинаем анимацию с 0
+            body.style.maxHeight = '0px';
+            body.style.height = '0px';
+            
+            // Запускаем анимацию разворачивания
+            requestAnimationFrame(() => {
+                body.style.maxHeight = realHeight + 'px';
+                body.style.height = 'auto';
+                
+                // После завершения анимации убираем ограничения
+                setTimeout(() => {
+                    if (!body.classList.contains('collapsed')) {
+                        body.style.maxHeight = 'none';
+                        body.style.height = 'auto';
+                    }
+                }, 300); // Длительность анимации из CSS
+            });
+        } else {
+            // Сворачиваем
+            const currentHeight = body.scrollHeight;
+            body.style.maxHeight = currentHeight + 'px';
+            body.style.height = currentHeight + 'px';
+            
+            // Даем время для установки высоты
+            requestAnimationFrame(() => {
+                body.classList.add('collapsed');
+                icon.classList.add('collapsed');
+                
+                // Анимируем до 0
+                body.style.maxHeight = '0px';
+                body.style.height = '0px';
+            });
+        }
+    }
+}
+
+// Функция для сворачивания/разворачивания секции текста претензии
+function toggleClaimText() {
+    const body = document.getElementById('claim-text-body');
+    const icon = document.querySelector('.claim-text-card .collapse-icon');
+    
+    if (body && icon) {
+        if (body.classList.contains('collapsed')) {
+            // Разворачиваем
+            body.classList.remove('collapsed');
+            icon.classList.remove('collapsed');
+            
+            // Получаем реальную высоту содержимого
+            body.style.maxHeight = 'none';
+            body.style.height = 'auto';
+            const realHeight = body.scrollHeight;
+            
+            // Начинаем анимацию с 0
+            body.style.maxHeight = '0px';
+            body.style.height = '0px';
+            
+            // Запускаем анимацию разворачивания
+            requestAnimationFrame(() => {
+                body.style.maxHeight = realHeight + 'px';
+                body.style.height = 'auto';
+                
+                // После завершения анимации убираем ограничения
+                setTimeout(() => {
+                    if (!body.classList.contains('collapsed')) {
+                        body.style.maxHeight = 'none';
+                        body.style.height = 'auto';
+                    }
+                }, 300); // Длительность анимации из CSS
+            });
+        } else {
+            // Сворачиваем
+            const currentHeight = body.scrollHeight;
+            body.style.maxHeight = currentHeight + 'px';
+            body.style.height = currentHeight + 'px';
+            
+            // Даем время для установки высоты
+            requestAnimationFrame(() => {
+                body.classList.add('collapsed');
+                icon.classList.add('collapsed');
+                
+                // Анимируем до 0
+                body.style.maxHeight = '0px';
+                body.style.height = '0px';
+            });
+        }
+    }
+}
+
+// Функция для сворачивания/разворачивания секции образца претензии
+
+// Инициализация высоты секций при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const claimTextBody = document.getElementById('claim-text-body');
+    const repairBody = document.getElementById('repair-info-body');
+    
+    // Делаем все секции закрытыми по умолчанию
+    if (claimTextBody) {
+        const claimTextHeight = claimTextBody.scrollHeight;
+        claimTextBody.style.maxHeight = claimTextHeight + 'px';
+        claimTextBody.style.height = claimTextHeight + 'px';
+        
+        // Даем время для установки высоты, затем сворачиваем
+        requestAnimationFrame(() => {
+            claimTextBody.classList.add('collapsed');
+            claimTextBody.style.maxHeight = '0px';
+            claimTextBody.style.height = '0px';
+        });
+    }
+    
+    if (repairBody) {
+        const repairHeight = repairBody.scrollHeight;
+        repairBody.style.maxHeight = repairHeight + 'px';
+        repairBody.style.height = repairHeight + 'px';
+        
+        // Даем время для установки высоты, затем сворачиваем
+        requestAnimationFrame(() => {
+            repairBody.classList.add('collapsed');
+            repairBody.style.maxHeight = '0px';
+            repairBody.style.height = '0px';
+        });
+    }
+    
+    // Поворачиваем иконки вправо (закрытое состояние)
+    const collapseIcons = document.querySelectorAll('.collapse-icon');
+    collapseIcons.forEach(icon => {
+        icon.classList.add('collapsed');
+    });
+});
 
 // Функция для показа деталей отслеживания
 function showTrackingDetails(trackerInfo) {
@@ -1503,4 +1990,76 @@ function showTrackingDetails(trackerInfo) {
     const modal = new bootstrap.Modal(detailsModal);
     modal.show();
 }
+
+// Функции для работы с панелью инструментов Word-редактора
+function formatClaimText(command, value = null) {
+    const editor = document.getElementById('claim-text-editor');
+    if (!editor) return;
+    
+    editor.focus();
+    
+    if (command === 'fontSize' || command === 'fontFamily') {
+        document.execCommand(command, false, value);
+    } else {
+        document.execCommand(command, false, null);
+    }
+    
+    // Обновляем состояние кнопок
+    updateClaimTextToolbarState();
+}
+
+function insertClaimTextTab() {
+    const editor = document.getElementById('claim-text-editor');
+    if (!editor) return;
+    
+    editor.focus();
+    
+    // Вставляем 4 пробела вместо табуляции
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(document.createTextNode('    '));
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
+function updateClaimTextToolbarState() {
+    const editor = document.getElementById('claim-text-editor');
+    if (!editor) return;
+    
+    // Проверяем состояние форматирования
+    const isBold = document.queryCommandState('bold');
+    const isItalic = document.queryCommandState('italic');
+    const isUnderline = document.queryCommandState('underline');
+    
+    // Обновляем состояние кнопок
+    document.querySelector('[onclick*="formatClaimText(\'bold\')"]').classList.toggle('active', isBold);
+    document.querySelector('[onclick*="formatClaimText(\'italic\')"]').classList.toggle('active', isItalic);
+    document.querySelector('[onclick*="formatClaimText(\'underline\')"]').classList.toggle('active', isUnderline);
+}
+
+// Добавляем обработчики событий для Word-редактора в модальном окне
+document.addEventListener('DOMContentLoaded', function() {
+    const claimTextEditor = document.getElementById('claim-text-editor');
+    if (claimTextEditor) {
+        claimTextEditor.addEventListener('input', function() {
+            updateClaimTextToolbarState();
+        });
+        claimTextEditor.addEventListener('selectionchange', updateClaimTextToolbarState);
+        claimTextEditor.addEventListener('keyup', updateClaimTextToolbarState);
+        claimTextEditor.addEventListener('mouseup', updateClaimTextToolbarState);
+        
+        // Обработка клавиши Tab для вставки 4 пробелов
+        claimTextEditor.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Предотвращаем стандартное поведение Tab
+                insertClaimTextTab();
+            }
+        });
+    }
+});
 </script>
+

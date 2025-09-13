@@ -90,7 +90,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                     return '<span class="text-muted">Не указана</span>';
                                 },
                                 'filter' => Html::activeDropDownList($searchModel, 'category_id', 
-                                    \yii\helpers\ArrayHelper::map(\app\models\Category::find()->all(), 'id', 'title'),
+                                    \yii\helpers\ArrayHelper::map(\app\models\Category::find()->all(), 'id', 'name'),
                                     ['class' => 'form-control', 'prompt' => 'Все категории']
                                 ),
                                 'contentOptions' => ['style' => 'vertical-align: middle;'],

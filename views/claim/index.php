@@ -52,7 +52,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
                 <div class="card-body">
                     <?php Pjax::begin(); ?>
-                    <?= GridView::widget([
+                    <div class="table-responsive">
+                        <?= GridView::widget([
                         'dataProvider' => $dataProvider,
                         'filterModel' => $searchModel,
                         'columns' => [
@@ -165,10 +166,10 @@ $this->params['breadcrumbs'][] = $this->title;
                             ],
                         ],
                         'tableOptions' => ['class' => 'table table-striped table-hover'],
-                        'options' => ['class' => 'table-responsive'],
                         'emptyText' => 'Данные отсутствуют',
                         'emptyTextOptions' => ['class' => 'text-center text-muted py-4'],
                     ]); ?>
+                    </div>
                     <?php Pjax::end(); ?>
                 </div>
             </div>
@@ -177,6 +178,22 @@ $this->params['breadcrumbs'][] = $this->title;
 </div>
 
 <style>
+/* Расширение контейнера на всю ширину */
+.claim-index {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0 10px;
+}
+
+.claim-index .row {
+    margin: 0;
+}
+
+.claim-index .col-12 {
+    padding: 0;
+}
+
 .dashboard-header {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: white;
@@ -240,6 +257,8 @@ $this->params['breadcrumbs'][] = $this->title;
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     overflow: hidden;
+    width: 100%;
+    max-width: none;
 }
 
 .card-header {
@@ -291,6 +310,18 @@ $this->params['breadcrumbs'][] = $this->title;
     padding: 30px;
 }
 
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 15px 15px;
+}
+
+.table {
+    margin: 0;
+    min-width: 100%; /* Используем всю доступную ширину */
+    width: 100%;
+}
+
 .table th {
     background: #f8f9fa;
     font-weight: 600;
@@ -300,12 +331,45 @@ $this->params['breadcrumbs'][] = $this->title;
     color: #495057;
     border-bottom: 2px solid #dee2e6;
     padding: 12px 8px;
+    white-space: nowrap; /* Предотвращаем перенос текста в заголовках */
 }
 
 .table td {
     font-size: 0.85rem;
     padding: 12px 8px;
     vertical-align: middle;
+    white-space: nowrap; /* Предотвращаем перенос текста в ячейках */
+}
+
+/* Расширенные колонки для использования всего пространства */
+.table th:nth-child(1),
+.table td:nth-child(1) {
+    width: 60px; /* Номер */
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+    width: 200px; /* Тип претензии */
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) {
+    width: 300px; /* Покупка */
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4) {
+    width: 150px; /* Статус */
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5) {
+    width: 150px; /* Дата */
+}
+
+.table th:nth-child(6),
+.table td:nth-child(6) {
+    width: 150px; /* Действия */
 }
 
 .claim-title-link {
@@ -370,4 +434,183 @@ $this->params['breadcrumbs'][] = $this->title;
 .badge-success { background: linear-gradient(135deg, #10B981, #059669); }
 .badge-danger { background: linear-gradient(135deg, #EF4444, #DC2626); }
 .badge-secondary { background: linear-gradient(135deg, #6B7280, #4B5563); }
+
+/* Адаптивные стили для таблицы */
+@media (max-width: 1200px) {
+    .table th,
+    .table td {
+        padding: 8px 4px;
+        font-size: 0.8rem;
+    }
+    
+    .table th:nth-child(2),
+    .table td:nth-child(2) {
+        width: 150px; /* Уменьшаем тип претензии */
+    }
+    
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        width: 200px; /* Уменьшаем покупку */
+    }
+    
+    .table th:nth-child(4),
+    .table td:nth-child(4) {
+        width: 120px;
+    }
+    
+    .table th:nth-child(5),
+    .table td:nth-child(5) {
+        width: 120px;
+    }
+    
+    .table th:nth-child(6),
+    .table td:nth-child(6) {
+        width: 120px;
+    }
+}
+
+@media (max-width: 992px) {
+    .card-body {
+        padding: 20px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 6px 3px;
+        font-size: 0.75rem;
+    }
+    
+    .table th:nth-child(2),
+    .table td:nth-child(2) {
+        width: 120px;
+    }
+    
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        width: 150px;
+    }
+    
+    .table th:nth-child(4),
+    .table td:nth-child(4) {
+        width: 100px;
+    }
+    
+    .table th:nth-child(5),
+    .table td:nth-child(5) {
+        width: 100px;
+    }
+    
+    .table th:nth-child(6),
+    .table td:nth-child(6) {
+        width: 100px;
+    }
+    
+    .btn-group .btn {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 15px;
+    }
+    
+    .table {
+        min-width: 600px; /* Включаем горизонтальную прокрутку на мобильных */
+    }
+    
+    .table th,
+    .table td {
+        padding: 4px 2px;
+        font-size: 0.7rem;
+    }
+    
+    .table th:nth-child(2),
+    .table td:nth-child(2) {
+        width: 100px;
+    }
+    
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        width: 120px;
+    }
+    
+    .table th:nth-child(4),
+    .table td:nth-child(4) {
+        width: 80px;
+    }
+    
+    .table th:nth-child(5),
+    .table td:nth-child(5) {
+        width: 90px;
+    }
+    
+    .table th:nth-child(6),
+    .table td:nth-child(6) {
+        width: 90px;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        gap: 1px;
+    }
+    
+    .btn-group .btn {
+        padding: 2px 4px;
+        font-size: 0.65rem;
+    }
+    
+    .claim-type-badge {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .table {
+        min-width: 500px; /* Минимальная ширина для очень маленьких экранов */
+    }
+    
+    .table th,
+    .table td {
+        padding: 3px 1px;
+        font-size: 0.65rem;
+    }
+    
+    .table th:nth-child(2),
+    .table td:nth-child(2) {
+        width: 80px;
+    }
+    
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        width: 100px;
+    }
+    
+    .table th:nth-child(4),
+    .table td:nth-child(4) {
+        width: 70px;
+    }
+    
+    .table th:nth-child(5),
+    .table td:nth-child(5) {
+        width: 80px;
+    }
+    
+    .table th:nth-child(6),
+    .table td:nth-child(6) {
+        width: 80px;
+    }
+    
+    .btn-group .btn {
+        padding: 1px 3px;
+        font-size: 0.6rem;
+    }
+    
+    .claim-type-badge {
+        font-size: 0.55rem;
+        padding: 1px 3px;
+    }
+}
 </style>

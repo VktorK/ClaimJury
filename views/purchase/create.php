@@ -330,7 +330,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 </button>
             </div>
             <div class="modal-body">
-                <form id="product-form" enctype="multipart/form-data">
+                <form id="product-form">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="form-group mb-3">
@@ -369,11 +369,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         </div>
                     </div>
                     
-                    <div class="form-group mb-3">
-                        <label class="form-label">Изображение товара</label>
-                        <input type="file" class="form-control" id="product-image" name="Product[image]" accept="image/*">
-                        <small class="form-text text-muted">Поддерживаются форматы: JPG, PNG, GIF (макс. 5MB)</small>
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -575,13 +570,6 @@ $this->params['breadcrumbs'][] = $this->title;
 }
 
 /* Стили для поля файла */
-#productModal input[type="file"] {
-    margin-bottom: 0.5rem;
-}
-
-#productModal input[type="file"] + .form-text {
-    margin-top: 0.5rem;
-}
 
 .selected-product-info {
     margin-top: 15px;

@@ -83,6 +83,33 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
             </div>
         </div>
+        
+        <div class="col-lg-5 col-md-6 mb-4">
+            <div class="card dashboard-main-block">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-file-alt"></i>
+                        ШАБЛОНЫ ПРЕТЕНЗИЙ
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="dashboard-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h4 class="dashboard-block-title">Управление шаблонами</h4>
+                    <p class="dashboard-block-text">
+                        Создавайте и редактируйте шаблоны претензий. 
+                        Настраивайте автоматическое заполнение данных из базы.
+                    </p>
+                    <div class="dashboard-actions">
+                        <?= Html::a('Управление шаблонами', ['/claim-template/index'], [
+                            'class' => 'btn btn-info btn-lg',
+                            'style' => 'width: 100%; max-width: 300px;'
+                        ]) ?>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

@@ -113,12 +113,27 @@ class ClaimController extends Controller
         $model = new Claim();
 
         if ($model->load(Yii::$app->request->post())) {
+            // Отладочная информация
+            $postData = Yii::$app->request->post();
+            Yii::info('POST данные при создании претензии: ' . json_encode($postData), 'claim');
+            Yii::info('Описание претензии в POST: ' . ($postData['Claim']['description'] ?? 'НЕТ'), 'claim');
+            
+            // Обрабатываем HTML-теги в описании
+            if (!empty($model->description)) {
+                // Сохраняем HTML с форматированием, но очищаем от опасных тегов
+                $model->description = $this->sanitizeHtml($model->description);
+                Yii::info('Описание после очистки HTML: ' . $model->description, 'claim');
+            }
+            
             $model->user_id = Yii::$app->user->id;
             $model->claim_date = time();
             
             if ($model->save()) {
+                Yii::info('Претензия сохранена с описанием: ' . ($model->description ?? 'НЕТ'), 'claim');
                 Yii::$app->session->setFlash('success', 'Претензия успешно создана.');
                 return $this->redirect(['view', 'id' => $model->id]);
+            } else {
+                Yii::error('Ошибки при сохранении претензии: ' . json_encode($model->errors), 'claim');
             }
         }
 
@@ -172,17 +187,29 @@ class ClaimController extends Controller
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
-        
+
         if (!$model->canDelete()) {
+            if (Yii::$app->request->isAjax) {
+                Yii::$app->response->format = Response::FORMAT_JSON;
+                return ['success' => false, 'message' => 'Нельзя удалить претензию в текущем статусе.'];
+            }
             Yii::$app->session->setFlash('error', 'Нельзя удалить претензию в текущем статусе.');
-            return $this->redirect(['index']);
+            return $this->redirect(Yii::$app->request->referrer ?: ['index']);
+        }
+
+        $model->delete();
+
+        if (Yii::$app->request->isAjax) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+            return ['success' => true, 'message' => 'Претензия успешно удалена.'];
         }
         
-        $model->delete();
         Yii::$app->session->setFlash('success', 'Претензия успешно удалена.');
-
-        return $this->redirect(['index']);
+        
+        // Всегда редиректим на страницу покупок, если это не AJAX-запрос
+        return $this->redirect(['/purchase/index']);
     }
+
 
     /**
      * Finds the Claim model based on its primary key value.
@@ -534,6 +561,60 @@ class ClaimController extends Controller
     }
 
     /**
+     * Очищает HTML от опасных тегов, сохраняя форматирование
+     * @param string $html HTML-контент
+     * @return string Безопасный HTML
+     */
+    private function sanitizeHtml($html)
+    {
+        // Разрешенные теги для форматирования
+        $allowedTags = '<p><br><strong><b><em><i><u><ul><ol><li><h1><h2><h3><h4><h5><h6><div><span>';
+        
+        // Очищаем от опасных тегов, оставляя только разрешенные
+        $cleanHtml = strip_tags($html, $allowedTags);
+        
+        // Убираем пустые теги
+        $cleanHtml = preg_replace('/<(\w+)[^>]*>\s*<\/\1>/', '', $cleanHtml);
+        
+        // Нормализуем пробелы
+        $cleanHtml = preg_replace('/\s+/', ' ', $cleanHtml);
+        $cleanHtml = trim($cleanHtml);
+        
+        return $cleanHtml;
+    }
+
+    /**
+     * Получить HTML контент претензии для редактирования (AJAX)
+     * @return Response
+     */
+    public function actionGetClaimHtml()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $id = Yii::$app->request->get('id');
+        
+        if (!$id) {
+            return ['success' => false, 'message' => 'ID не указан'];
+        }
+        
+        $claim = Claim::findOne($id);
+        if (!$claim) {
+            return ['success' => false, 'message' => 'Претензия не найдена'];
+        }
+        
+        // Проверяем права доступа
+        if ($claim->user_id !== Yii::$app->user->id) {
+            return ['success' => false, 'message' => 'Нет прав для просмотра этой претензии'];
+        }
+        
+        return [
+            'success' => true, 
+            'html' => $claim->description ?: '',
+            'message' => 'HTML контент получен'
+        ];
+    }
+
+    /**
      * Получить данные покупки для модального окна (AJAX)
      * @return Response
      */
@@ -718,10 +799,19 @@ class ClaimController extends Controller
         }
         
         try {
-            $claim->description = $description;
+            // Отладочная информация
+            Yii::info('Обновление текста претензии ID: ' . $id, 'claim');
+            Yii::info('Полученное описание: ' . $description, 'claim');
+            
+            // Сохраняем HTML с форматированием, но очищаем от опасных тегов
+            $claim->description = $this->sanitizeHtml($description);
+            Yii::info('Описание после очистки: ' . $claim->description, 'claim');
+            
             if ($claim->save()) {
+                Yii::info('Текст претензии успешно сохранен', 'claim');
                 return ['success' => true, 'message' => 'Шаблон успешно обновлен'];
             } else {
+                Yii::error('Ошибки при сохранении текста претензии: ' . json_encode($claim->errors), 'claim');
                 return ['success' => false, 'message' => 'Ошибка при сохранении: ' . implode(', ', $claim->getFirstErrors())];
             }
         } catch (\Exception $e) {
@@ -896,29 +986,28 @@ class ClaimController extends Controller
     public function actionCheckTracking()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        
+
         $trackingNumber = Yii::$app->request->post('tracking_number');
         $claimId = Yii::$app->request->post('claim_id');
-        
+
         if (!$trackingNumber || !$claimId) {
             return ['success' => false, 'message' => 'Не указаны обязательные параметры'];
         }
-        
+
         $claim = Claim::findOne($claimId);
         if (!$claim) {
             return ['success' => false, 'message' => 'Претензия не найдена'];
         }
-        
+
         if ($claim->user_id !== Yii::$app->user->id) {
             return ['success' => false, 'message' => 'Нет прав для проверки статуса этой претензии'];
         }
 
         try {
-            // Определяем перевозчика по номеру отслеживания
             $carrier = $this->_moyaposylkaService->detectCarrier($trackingNumber);
 
-            // Сначала добавляем трекер
-            $addResult = $this->_moyaposylkaService->addTracker($carrier, $trackingNumber);
+            // 1. Сначала добавляем трекер
+            $addResult = $this->_moyaposylkaService->addTracker($carrier, $claimId, $trackingNumber);
             if (!$addResult) {
                 return [
                     'success' => false,
@@ -926,38 +1015,76 @@ class ClaimController extends Controller
                 ];
             }
 
-            // Затем получаем информацию
+            // 2. Получаем информацию
             $infoResult = $this->_moyaposylkaService->getTrackerInfo($carrier, $trackingNumber);
 
-            if ($infoResult) {
-                // Создаем или обновляем запись в таблице packages
-                $package = Package::createOrUpdate($trackingNumber, $this->mapApiStatusToPackageStatus($infoResult), $infoResult, $claim->id);
-                
-                // Обновляем данные в претензии
-                $claim->tracking_number = $trackingNumber;
-                $claim->tracking_status = $this->formatTrackingStatus($infoResult);
-                $claim->last_tracking_update = time();
-                $claim->save();
-                
-                // Формируем полную информацию о трекере для модального окна
-                $trackerInfo = $this->formatTrackerInfoForModal($infoResult, $carrier, $trackingNumber);
-                
+            // 3. Обрабатываем возможные сценарии
+            if ($infoResult === false) {
+                // Случай 1: Произошла реальная ошибка API
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка при получении информации от сервиса отслеживания'
+                ];
+            }
+
+            if (isset($infoResult['success']) && $infoResult['success'] === false) {
+                // Случай 2: Трекер добавлен, но данных еще нет (НОРМАЛЬНАЯ СИТУАЦИЯ)
+                $package = Package::createOrUpdate(
+                    $trackingNumber,
+                    Package::STATUS_PENDING, // Специальный статус "в обработке"
+                    ['message' => $infoResult['message'] ?? 'Данные в обработке'],
+                    $claim->id
+                );
+
                 return [
                     'success' => true,
+                    'status' => 'pending',
+                    'tracking_status' => 'Ожидание данных...',
+                    'tracker_info' => [
+                        'status' => 'pending',
+                        'message' => $infoResult['message'] ?? 'Трекер добавлен. Данные появятся в течение 24 часов.',
+                        'carrier' => $carrier,
+                        'tracking_number' => $trackingNumber
+                    ],
+                    'package_id' => $package->id,
+                    'message' => 'Трекер добавлен в систему отслеживания'
+                ];
+            }
+
+            if (isset($infoResult['success']) && $infoResult['success'] === true) {
+                // Случай 3: Данные успешно получены
+                $trackerInfo = $this->formatTrackerInfoForModal($infoResult, $carrier, $trackingNumber);
+
+                $package = Package::createOrUpdate(
+                    $trackingNumber,
+                    $this->mapApiStatusToPackageStatus($infoResult),
+                    $infoResult,
+                    $claim->id
+                );
+
+                return [
+                    'success' => true,
+                    'status' => 'success',
                     'tracking_status' => $this->formatTrackingStatus($infoResult),
                     'tracker_info' => $trackerInfo,
                     'package_id' => $package->id,
-                    'message' => 'Статус отслеживания обновлен'
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'message' => 'Трекер добавлен, но не удалось получить информацию'
+                    'message' => 'Статус отслеживания получен'
                 ];
             }
+
+            // Случай 4: Непредвиденный формат ответа
+            Yii::error("Неожиданный формат ответа API: " . Json::encode($infoResult), 'moyaposylka');
+            return [
+                'success' => false,
+                'message' => 'Непредвиденный ответ от сервиса отслеживания'
+            ];
+
         } catch (\Exception $e) {
             Yii::error('Ошибка при проверке статуса отслеживания: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString(), 'claim');
-            return ['success' => false, 'message' => 'Ошибка при проверке статуса отслеживания: ' . $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => 'Ошибка при проверке статуса отслеживания'
+            ];
         }
     }
 
@@ -1092,6 +1219,44 @@ class ClaimController extends Controller
         ];
 
         return $statusMap[$status] ?? Package::STATUS_PENDING;
+    }
+
+//    public function actionDebugTracking()
+//    {
+//        $trackingNumber = '80086309440644'; // тестовый трек
+//        $carrier = $this->_moyaposylkaService->detectCarrier($trackingNumber);
+//
+//        $result = $this->_moyaposylkaService->debugTrackerInfo($carrier, $trackingNumber);
+//
+//        Yii::$app->response->format = Response::FORMAT_JSON;
+//        return $result;
+//    }
+
+    public function actionDebugTracking()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        try {
+            // Тестируем соединение
+            $connectionTest = $this->_moyaposylkaService->testConnection();
+
+            // Тестируем конкретный трек
+            $testTrack = '80086309440644';
+            $carrier = 'russian-post'; // или другой перевозчик
+            $trackerInfo = $this->_moyaposylkaService->getTrackerInfo($carrier, $testTrack);
+
+            return [
+                'connection_test' => $connectionTest,
+                'tracker_info' => $trackerInfo,
+                'service_config' => [
+                    'base_url' => Yii::$app->params['baseUrl'],
+                    'has_token' => !empty(Yii::$app->params['apiToken'])
+                ]
+            ];
+
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
     }
 
 }

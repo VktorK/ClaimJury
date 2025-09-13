@@ -94,9 +94,10 @@ $this->params['breadcrumbs'][] = $this->title;
                 <div class="card-body">
                     <?php Pjax::begin(); ?>
                     
-                    <?= GridView::widget([
-                        'dataProvider' => $dataProvider,
-                        'tableOptions' => ['class' => 'table table-hover'],
+                    <div class="table-responsive">
+                        <?= GridView::widget([
+                            'dataProvider' => $dataProvider,
+                            'tableOptions' => ['class' => 'table table-hover'],
                         'columns' => [
                             [
                                 'attribute' => 'product_id',
@@ -281,6 +282,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         'emptyText' => 'Данные отсутствуют',
                         'emptyTextOptions' => ['class' => 'text-center text-muted py-4'],
                     ]); ?>
+                    </div>
                     
                     <?php Pjax::end(); ?>
                 </div>
@@ -499,8 +501,16 @@ $this->params['breadcrumbs'][] = $this->title;
     padding: 0;
 }
 
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 15px 15px;
+}
+
 .table {
     margin: 0;
+    min-width: 800px; /* Минимальная ширина таблицы */
+    width: 100%;
 }
 
 .table th {
@@ -673,9 +683,46 @@ $this->params['breadcrumbs'][] = $this->title;
         height: 40px;
     }
     
+    .table-responsive {
+        border-radius: 0;
+    }
+    
+    .table {
+        min-width: 600px; /* Уменьшаем минимальную ширину на мобильных */
+    }
+    
+    .table th,
+    .table td {
+        padding: 8px 4px;
+        font-size: 0.75rem;
+    }
+    
     .receipt-thumb {
         width: 40px;
         height: 40px;
+    }
+}
+
+/* Дополнительные стили для очень маленьких экранов */
+@media (max-width: 480px) {
+    .table {
+        min-width: 500px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 6px 2px;
+        font-size: 0.7rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        gap: 1px;
+    }
+    
+    .table .btn {
+        padding: 1px 3px;
+        font-size: 0.65rem;
     }
 }
 
@@ -1181,14 +1228,54 @@ document.addEventListener('keydown', function(event) {
 function openClaimsModal(purchaseId) {
     const modal = document.getElementById('claimsModal');
     if (modal) {
-        // Сохраняем ID покупки в глобальной переменной
+        // Сохраняем ID покупки в глобальной переменной и в sessionStorage
         window.currentPurchaseId = purchaseId;
+        sessionStorage.setItem('lastPurchaseId', purchaseId);
+        
         modal.style.display = 'block';
         modal.classList.add('show');
         document.body.classList.add('modal-open');
         loadClaims(purchaseId);
     }
 }
+
+// Автоматически открываем модальное окно при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const openClaims = urlParams.get('open_claims');
+    
+    // Проверяем параметр URL
+    if (openClaims) {
+        setTimeout(() => {
+            openClaimsModal(openClaims);
+        }, 500);
+    }
+    // Проверяем sessionStorage (для случаев удаления по прямой ссылке)
+    else {
+        const lastPurchaseId = sessionStorage.getItem('lastPurchaseId');
+        if (lastPurchaseId) {
+            setTimeout(() => {
+                openClaimsModal(lastPurchaseId);
+                // Очищаем sessionStorage после использования
+                sessionStorage.removeItem('lastPurchaseId');
+            }, 500);
+        }
+    }
+    
+    // Добавляем глобальный обработчик для всех ссылок удаления в модальном окне
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('#claimsModal a[data-method="post"]') && 
+            e.target.getAttribute('data-confirm') && 
+            e.target.getAttribute('data-confirm').includes('удалить')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const claimId = extractClaimIdFromUrl(e.target.href);
+            if (claimId) {
+                deleteClaimAjax(claimId);
+            }
+        }
+    });
+});
 
 function closeClaimsModal() {
     const modal = document.getElementById('claimsModal');
@@ -1262,6 +1349,68 @@ function hideAllFiltersInModal() {
     if (filtersHeader) {
         filtersHeader.style.display = 'none';
     }
+    
+    // Заменяем обычные ссылки удаления на AJAX-версии
+    replaceDeleteLinksWithAjax();
+}
+
+function replaceDeleteLinksWithAjax() {
+    const deleteLinks = document.querySelectorAll('#claimsModal a[data-method="post"]');
+    
+    deleteLinks.forEach(link => {
+        if (link.getAttribute('data-confirm') && link.getAttribute('data-confirm').includes('удалить')) {
+            // Убираем data-confirm атрибут, чтобы избежать двойного подтверждения
+            link.removeAttribute('data-confirm');
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const claimId = extractClaimIdFromUrl(this.href);
+                if (claimId) {
+                    deleteClaimAjax(claimId);
+                }
+            });
+        }
+    });
+}
+
+function extractClaimIdFromUrl(url) {
+    const match = url.match(/\/claim\/delete\/(\d+)/);
+    return match ? match[1] : null;
+}
+
+function deleteClaimAjax(claimId) {
+    if (!confirm('Вы уверены, что хотите удалить эту претензию?')) {
+        return;
+    }
+    
+    fetch('/claim/delete/' + claimId, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Перезагружаем список претензий в модальном окне
+            if (window.currentPurchaseId) {
+                loadClaims(window.currentPurchaseId);
+            }
+        } else {
+            alert(data.message || 'Ошибка при удалении претензии');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Ошибка при удалении претензии: ' + error.message);
+    });
 }
 
 

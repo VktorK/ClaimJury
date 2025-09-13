@@ -10,7 +10,6 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\filters\AccessControl;
 use yii\web\Response;
-use yii\web\UploadedFile;
 
 /**
  * ProductController implements the CRUD actions for Product model.
@@ -78,17 +77,9 @@ class ProductController extends Controller
     {
         $model = new Product();
 
-        if ($model->load(Yii::$app->request->post())) {
-            // Обработка загрузки изображения
-            $imageFile = UploadedFile::getInstance($model, 'image');
-            if ($imageFile) {
-                $model->uploadImage($imageFile);
-            }
-
-            if ($model->save()) {
-                Yii::$app->session->setFlash('success', 'Товар успешно создан.');
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success', 'Товар успешно создан.');
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         return $this->render('create', [
@@ -107,17 +98,9 @@ class ProductController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post())) {
-            // Обработка загрузки изображения
-            $imageFile = UploadedFile::getInstance($model, 'image');
-            if ($imageFile) {
-                $model->uploadImage($imageFile);
-            }
-
-            if ($model->save()) {
-                Yii::$app->session->setFlash('success', 'Товар успешно обновлен.');
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success', 'Товар успешно обновлен.');
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         return $this->render('update', [
@@ -157,15 +140,7 @@ class ProductController extends Controller
             $model->purchases_id = $purchasesId;
         }
         
-        // Обработка загрузки изображения
-        $imageFile = UploadedFile::getInstance($model, 'image');
-        
         if ($model->save()) {
-            // Если есть изображение, загружаем его
-            if ($imageFile) {
-                $model->uploadImage($imageFile);
-                $model->save(); // Сохраняем с именем файла
-            }
             
             return [
                 'success' => true,

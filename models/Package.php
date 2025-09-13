@@ -197,7 +197,7 @@ class Package extends ActiveRecord
      * @param int|null $claimId
      * @return static
      */
-    public static function createOrUpdate($trackNumber, $status = self::STATUS_PENDING, $data = null, $claimId = null)
+    public static function createOrUpdate(string $trackNumber, int $status = self::STATUS_PENDING, array $data = null, int $claimId = null): ?Package
     {
         $package = static::findByTrackNumber($trackNumber);
         

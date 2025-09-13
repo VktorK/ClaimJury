@@ -26,9 +26,7 @@ $this->params['breadcrumbs'][] = 'Редактирование';
                 </div>
                 
                 <div class="card-body">
-                    <?php $form = ActiveForm::begin([
-                        'options' => ['enctype' => 'multipart/form-data']
-                    ]); ?>
+                    <?php $form = ActiveForm::begin(); ?>
 
                     <div class="row">
                         <div class="col-md-8">
@@ -51,37 +49,28 @@ $this->params['breadcrumbs'][] = 'Редактирование';
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
+                    <div class="form-row">
+                        <div class="form-group col-md-4 col-sm-6">
                             <?= $form->field($model, 'warranty_period')->input('number', [
                                 'min' => '0',
-                                'placeholder' => '0'
+                                'placeholder' => '0',
+                                'class' => 'form-control'
                             ]) ?>
                         </div>
-                        <div class="col-md-6">
-                            <?= $form->field($model, 'serial_number')->textInput(['maxlength' => true]) ?>
+                        <div class="form-group col-md-4 col-sm-6">
+                            <?= $form->field($model, 'serial_number')->textInput([
+                                'maxlength' => true,
+                                'class' => 'form-control'
+                            ]) ?>
+                        </div>
+                        <div class="form-group col-md-4 col-sm-12">
+                            <?= $form->field($model, 'model')->textInput([
+                                'maxlength' => true,
+                                'class' => 'form-control'
+                            ]) ?>
                         </div>
                     </div>
 
-                    <?= $form->field($model, 'description')->textarea(['rows' => 4]) ?>
-
-                    <div class="form-group">
-                        <label class="form-label">Изображение товара</label>
-                        <?= $form->field($model, 'image')->fileInput(['accept' => 'image/*'])->label(false) ?>
-                        <small class="form-text text-muted">Поддерживаются форматы: JPG, PNG, GIF (макс. 5MB)</small>
-                        
-                        <?php if ($model->image): ?>
-                            <div class="current-image mt-3">
-                                <label>Текущее изображение:</label>
-                                <div class="image-preview">
-                                    <img src="<?= $model->getImageUrl() ?>" 
-                                         alt="<?= Html::encode($model->title) ?>" 
-                                         class="current-image-preview"
-                                         onclick="openImageModal(this)">
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
 
                     <div class="form-actions">
                         <?= Html::submitButton('<i class="fas fa-save"></i> Сохранить изменения', [
@@ -114,13 +103,12 @@ $this->params['breadcrumbs'][] = 'Редактирование';
                             <li><strong>Категория</strong> - обязательное поле</li>
                             <li><strong>Гарантийный срок</strong> - укажите в месяцах</li>
                             <li><strong>Серийный номер</strong> - для бытовой техники</li>
-                            <li><strong>Описание</strong> - дополнительная информация</li>
-                            <li><strong>Изображение</strong> - загрузите фото товара</li>
+                            <li><strong>Модель</strong> - модель товара</li>
                         </ul>
                         
                         <div class="alert alert-info">
                             <i class="fas fa-lightbulb"></i>
-                            <strong>Совет:</strong> Загружайте качественные изображения товара для лучшего отображения.
+                            <strong>Совет:</strong> Заполните все поля для полной информации о товаре.
                         </div>
                     </div>
                 </div>
@@ -129,28 +117,6 @@ $this->params['breadcrumbs'][] = 'Редактирование';
     </div>
 </div>
 
-<!-- Модальное окно для просмотра изображения -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="imageModalLabel">Изображение товара</h5>
-                <button type="button" class="btn-close" onclick="closeImageModal()" aria-label="Закрыть">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" alt="" class="img-fluid">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeImageModal()">Закрыть</button>
-                <a id="downloadImage" href="" download class="btn btn-primary">
-                    <i class="fas fa-download"></i> Скачать
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
 .product-update {
@@ -194,6 +160,35 @@ $this->params['breadcrumbs'][] = 'Редактирование';
     margin-bottom: 1.5rem;
 }
 
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+.form-row .form-group {
+    padding-right: 15px;
+    padding-left: 15px;
+    flex: 0 0 auto;
+    width: 100%;
+}
+
+.form-row .col-md-4 {
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+}
+
+.form-row .col-sm-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+}
+
+.form-row .col-sm-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
 .form-label {
     font-weight: 600;
     color: #333;
@@ -207,6 +202,8 @@ $this->params['breadcrumbs'][] = 'Редактирование';
     padding: 12px 15px;
     font-size: 1rem;
     transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-control:focus {
@@ -241,31 +238,6 @@ $this->params['breadcrumbs'][] = 'Редактирование';
 }
 
 
-.current-image {
-    border: 2px dashed #e9ecef;
-    border-radius: 8px;
-    padding: 15px;
-    text-align: center;
-}
-
-.current-image label {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 10px;
-    display: block;
-}
-
-.current-image-preview {
-    max-width: 200px;
-    max-height: 200px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
-
-.current-image-preview:hover {
-    transform: scale(1.05);
-}
 
 .form-actions {
     display: flex;
@@ -361,104 +333,6 @@ $this->params['breadcrumbs'][] = 'Редактирование';
     margin-right: 8px;
 }
 
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1050;
-    display: none;
-}
-
-.modal.show {
-    display: block;
-}
-
-.modal-dialog {
-    position: relative;
-    width: auto;
-    max-width: 800px;
-    margin: 1.75rem auto;
-    pointer-events: none;
-}
-
-.modal-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    pointer-events: auto;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid rgba(0,0,0,.2);
-    border-radius: 0.3rem;
-    outline: 0;
-}
-
-.modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 1rem 1rem;
-    border-bottom: 1px solid #dee2e6;
-    border-top-left-radius: calc(0.3rem - 1px);
-    border-top-right-radius: calc(0.3rem - 1px);
-}
-
-.modal-title {
-    margin-bottom: 0;
-    line-height: 1.5;
-}
-
-.btn-close {
-    padding: 0.25rem 0.25rem;
-    margin: -0.25rem -0.25rem -0.25rem auto;
-    background: transparent;
-    border: 0;
-    border-radius: 0.25rem;
-    opacity: 0.5;
-    cursor: pointer;
-}
-
-.btn-close:hover {
-    opacity: 0.75;
-}
-
-.modal-body {
-    position: relative;
-    flex: 1 1 auto;
-    padding: 1rem;
-}
-
-.modal-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0.75rem;
-    border-top: 1px solid #dee2e6;
-    border-bottom-right-radius: calc(0.3rem - 1px);
-    border-bottom-left-radius: calc(0.3rem - 1px);
-}
-
-.modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1040;
-    width: 100vw;
-    height: 100vh;
-    background-color: #000;
-}
-
-.modal-backdrop.fade {
-    opacity: 0;
-}
-
-.modal-backdrop.show {
-    opacity: 0.5;
-}
 
 @media (max-width: 768px) {
     .card-body {
@@ -473,64 +347,28 @@ $this->params['breadcrumbs'][] = 'Редактирование';
         width: 100%;
         justify-content: center;
     }
+    
+    .form-row .col-md-4 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+    
+    .form-row .col-sm-12 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .form-row .col-md-4,
+    .form-row .col-sm-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    .form-control {
+        font-size: 16px; /* Предотвращает зум на iOS */
+    }
 }
 </style>
 
-<script>
-function openImageModal(img) {
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById('modalImage');
-    const downloadLink = document.getElementById('downloadImage');
-    
-    modalImg.src = img.src;
-    modalImg.alt = img.alt;
-    downloadLink.href = img.src;
-    downloadLink.download = img.alt + '.jpg';
-    
-    modal.style.display = 'block';
-    modal.classList.add('show');
-    document.body.classList.add('modal-open');
-    
-    // Add backdrop
-    const existingBackdrop = document.getElementById('imageModalBackdrop');
-    if (existingBackdrop) {
-        existingBackdrop.remove();
-    }
-    
-    const backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop fade show';
-    backdrop.id = 'imageModalBackdrop';
-    backdrop.style.position = 'fixed';
-    backdrop.style.top = '0';
-    backdrop.style.left = '0';
-    backdrop.style.width = '100%';
-    backdrop.style.height = '100%';
-    backdrop.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    backdrop.style.zIndex = '1040';
-    document.body.appendChild(backdrop);
-    
-    // Close on backdrop click
-    backdrop.addEventListener('click', closeImageModal);
-}
-
-function closeImageModal() {
-    const modal = document.getElementById('imageModal');
-    modal.style.display = 'none';
-    modal.classList.remove('show');
-    document.body.classList.remove('modal-open');
-    
-    // Remove backdrop
-    const backdrop = document.getElementById('imageModalBackdrop');
-    if (backdrop) {
-        backdrop.remove();
-    }
-}
-
-// Close modal on Escape
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeImageModal();
-    }
-});
-
-</script>

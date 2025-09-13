@@ -17,6 +17,7 @@ use yii\helpers\FileHelper;
  * @property int|null $category_id
  * @property string|null $image
  * @property string|null $serial_number
+ * @property string|null $model
  * @property int|null $warranty_period
  * @property int|null $purchases_id
  * @property int $created_at
@@ -74,7 +75,7 @@ class Product extends ActiveRecord
             [['title', 'category_id'], 'required'],
             [['description'], 'string'],
             [['category_id', 'warranty_period', 'purchases_id', 'created_at', 'updated_at'], 'integer'],
-            [['title', 'serial_number'], 'string', 'max' => 255],
+            [['title', 'serial_number', 'model'], 'string', 'max' => 255],
             [['image'], 'string', 'max' => 500],
             [['image'], 'file', 'extensions' => 'png, jpg, jpeg, gif', 'maxSize' => 5 * 1024 * 1024],
             [['warranty_period'], 'integer', 'min' => 0],
@@ -95,6 +96,7 @@ class Product extends ActiveRecord
             'category_id' => 'Категория',
             'image' => 'Изображение',
             'serial_number' => 'Серийный номер',
+            'model' => 'Модель',
             'warranty_period' => 'Гарантийный срок (месяцы)',
             'purchases_id' => 'Покупка',
             'created_at' => 'Дата создания',

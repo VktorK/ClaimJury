@@ -2,13 +2,15 @@
 
 namespace app\models;
 
+use Yii;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
+use app\models\ClaimTemplate;
 
 /**
- * CategorySearch represents the model behind the search form of `app\models\Category`.
+ * ClaimTemplateSearch represents the model behind the search form of `app\models\ClaimTemplate`.
  */
-class CategorySearch extends Category
+class ClaimTemplateSearch extends ClaimTemplate
 {
     /**
      * {@inheritdoc}
@@ -16,8 +18,8 @@ class CategorySearch extends Category
     public function rules()
     {
         return [
-            [['id', 'created_at', 'updated_at'], 'integer'],
-            [['title'], 'safe'],
+            [['id', 'status', 'created_at', 'updated_at'], 'integer'],
+            [['name', 'type', 'description', 'template_content'], 'safe'],
         ];
     }
 
@@ -39,17 +41,14 @@ class CategorySearch extends Category
      */
     public function search($params)
     {
-        $query = Category::find();
+        $query = ClaimTemplate::find();
 
         // add conditions that should always apply here
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'sort' => [
-                'defaultOrder' => ['title' => SORT_ASC]
-            ],
-            'pagination' => [
-                'pageSize' => 20,
+                'defaultOrder' => ['created_at' => SORT_DESC],
             ],
         ]);
 
@@ -64,11 +63,15 @@ class CategorySearch extends Category
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
+            'status' => $this->status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ]);
 
-        $query->andFilterWhere(['like', 'name', $this->title]);
+        $query->andFilterWhere(['like', 'name', $this->name])
+            ->andFilterWhere(['like', 'type', $this->type])
+            ->andFilterWhere(['like', 'description', $this->description])
+            ->andFilterWhere(['like', 'template_content', $this->template_content]);
 
         return $dataProvider;
     }
