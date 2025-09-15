@@ -60,6 +60,7 @@ class ClaimController extends Controller
                 'save-defect-proof-info' => ['POST'],
                 'update-template' => ['POST'],
                 'check-tracking' => ['POST'],
+                'create-draft' => ['POST'],
                 ],
             ],
         ];
@@ -873,19 +874,14 @@ class ClaimController extends Controller
     }
 
     /**
-     * Сохранение информации о ремонте (AJAX)
+     * Создание черновика претензии (AJAX)
      */
-    public function actionSaveRepairInfo()
+    public function actionCreateDraft()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         
         $purchaseId = Yii::$app->request->post('purchase_id');
-        $wasRepairedOfficially = Yii::$app->request->post('was_repaired_officially');
-        $repairDocumentDescription = Yii::$app->request->post('repair_document_description');
-        $repairDocumentDate = Yii::$app->request->post('repair_document_date');
-        $defectDescription = Yii::$app->request->post('defect_description');
-        
-        Yii::info('Сохранение информации о ремонте для покупки: ' . $purchaseId, 'claim');
+        $claimType = Yii::$app->request->post('claim_type');
         
         if (!$purchaseId) {
             return ['success' => false, 'message' => 'Не указан ID покупки'];
@@ -898,26 +894,74 @@ class ClaimController extends Controller
         
         // Проверяем права доступа
         if ($purchase->user_id !== Yii::$app->user->id) {
-            return ['success' => false, 'message' => 'Нет прав для редактирования этой покупки'];
+            return ['success' => false, 'message' => 'Нет прав для создания претензии по этой покупке'];
         }
         
         try {
-        $purchase->was_repaired_officially = (bool)$wasRepairedOfficially;
-        $purchase->repair_document_description = $repairDocumentDescription;
-        $purchase->repair_document_date = $repairDocumentDate;
+            $claim = new Claim();
+            $claim->user_id = Yii::$app->user->id;
+            $claim->purchase_id = $purchaseId;
+            $claim->claim_type = $claimType ?: Claim::TYPE_CUSTOM;
+            $claim->claim_date = time();
+            $claim->status = Claim::STATUS_PENDING;
+            
+            if ($claim->save()) {
+                return ['success' => true, 'claim_id' => $claim->id, 'message' => 'Черновик претензии создан'];
+            } else {
+                return ['success' => false, 'message' => 'Ошибка при создании черновика претензии'];
+            }
+        } catch (\Exception $e) {
+            Yii::error('Ошибка при создании черновика претензии: ' . $e->getMessage(), 'claim');
+            return ['success' => false, 'message' => 'Ошибка при создании черновика претензии'];
+        }
+    }
+
+    /**
+     * Сохранение информации о ремонте (AJAX)
+     */
+    public function actionSaveRepairInfo()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $claimId = Yii::$app->request->post('claim_id');
+        $wasRepairedOfficially = Yii::$app->request->post('was_repaired_officially');
+        $repairDocumentDescription = Yii::$app->request->post('repair_document_description');
+        $repairDocumentDate = Yii::$app->request->post('repair_document_date');
+        $defectDescription = Yii::$app->request->post('defect_description');
+        
+        Yii::info('Сохранение информации о ремонте для претензии: ' . $claimId, 'claim');
+        
+        if (!$claimId) {
+            return ['success' => false, 'message' => 'Не указан ID претензии'];
+        }
+        
+        $claim = Claim::findOne($claimId);
+        if (!$claim) {
+            return ['success' => false, 'message' => 'Претензия не найдена'];
+        }
+        
+        // Проверяем права доступа
+        if ($claim->user_id !== Yii::$app->user->id) {
+            return ['success' => false, 'message' => 'Нет прав для редактирования этой претензии'];
+        }
+        
+        try {
+        $claim->was_repaired_officially = (bool)$wasRepairedOfficially;
+        $claim->repair_document_description = $repairDocumentDescription;
+        $claim->repair_document_date = $repairDocumentDate;
         
         // Сохраняем описание недостатка в соответствующее поле
         if ($wasRepairedOfficially) {
-            $purchase->repair_defect_description = $defectDescription;
+            $claim->repair_defect_description = $defectDescription;
         } else {
-            $purchase->current_defect_description = $defectDescription;
+            $claim->current_defect_description = $defectDescription;
         }
             
-            if ($purchase->save()) {
+            if ($claim->save()) {
                 Yii::info('Информация о ремонте сохранена успешно', 'claim');
                 return ['success' => true, 'message' => 'Информация о ремонте сохранена'];
             } else {
-                Yii::error('Ошибки валидации при сохранении информации о ремонте: ' . implode(', ', $purchase->getFirstErrors()), 'claim');
+                Yii::error('Ошибки валидации при сохранении информации о ремонте: ' . implode(', ', $claim->getFirstErrors()), 'claim');
                 return ['success' => false, 'message' => 'Ошибка при сохранении информации о ремонте'];
             }
         } catch (\Exception $e) {
@@ -933,45 +977,45 @@ class ClaimController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         
-        $purchaseId = Yii::$app->request->post('purchase_id');
+        $claimId = Yii::$app->request->post('claim_id');
         $defectProofType = Yii::$app->request->post('defect_proof_type');
         $defectProofDocumentDescription = Yii::$app->request->post('defect_proof_document_description');
         $defectProofDocumentDate = Yii::$app->request->post('defect_proof_document_date');
         $defectDescription = Yii::$app->request->post('defect_description');
+        $defectSimilarity = Yii::$app->request->post('defect_similarity');
         
-        Yii::info('Сохранение информации о доказательствах недостатка для покупки: ' . $purchaseId, 'claim');
+        Yii::info('Сохранение информации о доказательствах недостатка для претензии: ' . $claimId, 'claim');
         
-        if (!$purchaseId) {
-            return ['success' => false, 'message' => 'Не указан ID покупки'];
+        if (!$claimId) {
+            return ['success' => false, 'message' => 'Не указан ID претензии'];
         }
         
-        $purchase = Purchase::findOne($purchaseId);
-        if (!$purchase) {
-            return ['success' => false, 'message' => 'Покупка не найдена'];
+        $claim = Claim::findOne($claimId);
+        if (!$claim) {
+            return ['success' => false, 'message' => 'Претензия не найдена'];
         }
         
         // Проверяем права доступа
-        if ($purchase->user_id !== Yii::$app->user->id) {
-            return ['success' => false, 'message' => 'Нет прав для редактирования этой покупки'];
+        if ($claim->user_id !== Yii::$app->user->id) {
+            return ['success' => false, 'message' => 'Нет прав для редактирования этой претензии'];
         }
         
         try {
-            $purchase->defect_proof_type = $defectProofType;
-            $purchase->defect_proof_document_description = $defectProofDocumentDescription;
-            $purchase->defect_proof_document_date = $defectProofDocumentDate;
+            $claim->defect_proof_type = $defectProofType;
+            $claim->defect_proof_document_description = $defectProofDocumentDescription;
+            $claim->defect_proof_document_date = $defectProofDocumentDate;
+            $claim->defect_similarity = $defectSimilarity ? (bool)$defectSimilarity : null;
             
             // Сохраняем описание недостатка в соответствующее поле
             if ($defectProofType === 'quality_check' || $defectProofType === 'independent_expertise') {
-                $purchase->expertise_defect_description = $defectDescription;
-            } else {
-                $purchase->general_defect_description = $defectDescription;
+                $claim->expertise_defect_description = $defectDescription;
             }
             
-            if ($purchase->save()) {
+            if ($claim->save()) {
                 Yii::info('Информация о доказательствах недостатка сохранена успешно', 'claim');
                 return ['success' => true, 'message' => 'Информация о доказательствах недостатка сохранена'];
             } else {
-                Yii::error('Ошибки валидации при сохранении информации о доказательствах недостатка: ' . implode(', ', $purchase->getFirstErrors()), 'claim');
+                Yii::error('Ошибки валидации при сохранении информации о доказательствах недостатка: ' . implode(', ', $claim->getFirstErrors()), 'claim');
                 return ['success' => false, 'message' => 'Ошибка при сохранении информации о доказательствах недостатка'];
             }
         } catch (\Exception $e) {

@@ -51,7 +51,7 @@ $this->params['breadcrumbs'][] = 'Предварительный просмот�
                 </div>
                 <div class="card-body">
                     <div class="preview-content">
-                        <?= nl2br(Html::encode($previewContent)) ?>
+                        <div class="template-formatted"><?= $this->context->formatTemplateContent($previewContent) ?></div>
                     </div>
                 </div>
             </div>
@@ -264,13 +264,101 @@ $this->params['breadcrumbs'][] = 'Предварительный просмот�
     border: 1px solid #E5E7EB;
     border-radius: 8px;
     padding: 30px;
-    font-family: 'Times New Roman', serif;
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #374151;
-    white-space: pre-wrap;
-    word-wrap: break-word;
     min-height: 400px;
+    overflow-y: auto;
+}
+
+.template-formatted {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #374151;
+}
+
+.template-line {
+    margin-bottom: 8px;
+    word-wrap: break-word;
+}
+
+.template-line-empty {
+    height: 16px;
+}
+
+.template-line-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: 20px 0;
+    text-transform: uppercase;
+}
+
+.template-line-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+
+.template-line-continuation {
+    margin-left: 0;
+    padding-left: 0;
+    margin-bottom: 4px;
+}
+
+.template-label {
+    font-weight: bold;
+    margin-right: 8px;
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+.template-value {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+    margin-left: 0;
+}
+
+.template-line-item {
+    display: flex;
+    align-items: baseline;
+    margin-left: 20px;
+}
+
+.template-item-number {
+    font-weight: bold;
+    margin-right: 8px;
+    white-space: nowrap;
+}
+
+.template-item-text {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.template-line-list {
+    display: flex;
+    align-items: baseline;
+    margin-left: 20px;
+}
+
+.template-list-marker {
+    margin-right: 8px;
+    white-space: nowrap;
+}
+
+.template-list-text {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.template-line-text {
+    text-align: justify;
+    word-break: break-word;
+    margin-bottom: 8px;
+    line-height: 1.6;
 }
 
 .data-section {

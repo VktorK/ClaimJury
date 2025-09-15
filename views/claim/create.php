@@ -1515,6 +1515,31 @@ document.addEventListener('DOMContentLoaded', function() {
             if (field) {
                 field.addEventListener('input', function() {
                     hideFieldError(fieldId);
+                    
+                    // Если выбрано "Да" на вопрос о схожести, обновляем связанные поля
+                    const selectedSimilarity = document.querySelector('input[name="defect_similarity"]:checked');
+                    if (selectedSimilarity && selectedSimilarity.value === '1') {
+                        const currentValue = this.value;
+                        
+                        if (fieldId === 'repairDefectDescription') {
+                            // Если это поле ремонта, обновляем другие поля
+                            const currentDefectField = document.getElementById('currentDefectDescription');
+                            if (currentDefectField) {
+                                currentDefectField.value = currentValue;
+                            }
+                            
+                            const defectDescriptionField = document.getElementById('defectDescription');
+                            if (defectDescriptionField) {
+                                defectDescriptionField.value = currentValue;
+                            }
+                        } else if (fieldId === 'currentDefectDescription') {
+                            // Если это поле текущего недостатка, обновляем поле экспертизы
+                            const defectDescriptionField = document.getElementById('defectDescription');
+                            if (defectDescriptionField) {
+                                defectDescriptionField.value = currentValue;
+                            }
+                        }
+                    }
                 });
             }
         });
@@ -1563,6 +1588,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const purchaseId = document.getElementById('purchase_id').value;
+        const claimType = document.getElementById('claim-type').value;
         const wasRepairedOfficially = selectedRepair.value === '1';
         const repairDocumentDescription = document.getElementById('repairDocumentDescription').value;
         const repairDocumentDate = document.getElementById('repairDocumentDate').value;
@@ -1579,15 +1605,25 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Сохраняем информацию о ремонте
-        saveRepairInfo(purchaseId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription);
-        
-        // Закрываем текущее модальное окно
-        const modal = bootstrap.Modal.getInstance(document.getElementById('repairQuestionModal'));
-        modal.hide();
-        
-        // Показываем следующее модальное окно с вопросом о доказательствах недостатка
-        showDefectProofModal();
+        // Создаем черновик претензии и сохраняем информацию о ремонте
+        createClaimDraft(purchaseId, claimType)
+            .then(claimId => {
+                // Сохраняем claim_id для дальнейшего использования
+                window.currentClaimId = claimId;
+                return saveRepairInfo(claimId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription);
+            })
+            .then(() => {
+                // Закрываем текущее модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('repairQuestionModal'));
+                modal.hide();
+                
+                // Показываем следующее модальное окно с вопросом о доказательствах недостатка
+                showDefectProofModal();
+            })
+            .catch(error => {
+                console.error('Ошибка при обработке вопроса о ремонте:', error);
+                alert('Ошибка при сохранении информации о ремонте');
+            });
     };
 
     // Функция для показа модального окна с вопросом о доказательствах недостатка
@@ -1720,9 +1756,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 const descriptionField = document.getElementById('defectDescriptionField');
                 
                 if (this.value === '0') {
+                    // Если выбрано "Нет" - показываем поле для ввода описания
                     descriptionField.style.display = 'block';
                 } else {
+                    // Если выбрано "Да" - скрываем поле и копируем описание
                     descriptionField.style.display = 'none';
+                    
+                    // Определяем источник описания недостатка
+                    let sourceDescription = '';
+                    
+                    // Сначала проверяем поле ремонта
+                    const repairDefectDescription = document.getElementById('repairDefectDescription').value;
+                    if (repairDefectDescription && repairDefectDescription.trim() !== '') {
+                        sourceDescription = repairDefectDescription;
+                    } else {
+                        // Если поле ремонта пустое, берем из поля текущего недостатка
+                        const currentDefectDescription = document.getElementById('currentDefectDescription').value;
+                        if (currentDefectDescription && currentDefectDescription.trim() !== '') {
+                            sourceDescription = currentDefectDescription;
+                        }
+                    }
+                    
+                    if (sourceDescription && sourceDescription.trim() !== '') {
+                        // Копируем в поле текущего недостатка (если оно пустое)
+                        const currentDefectField = document.getElementById('currentDefectDescription');
+                        if (currentDefectField && (!currentDefectField.value || currentDefectField.value.trim() === '')) {
+                            currentDefectField.value = sourceDescription;
+                        }
+                        
+                        // Копируем в поле описания недостатка для экспертизы
+                        const defectDescriptionField = document.getElementById('defectDescription');
+                        if (defectDescriptionField) {
+                            defectDescriptionField.value = sourceDescription;
+                        }
+                    }
                 }
             });
         });
@@ -1758,7 +1825,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        const purchaseId = document.getElementById('purchase_id').value;
+        const claimId = window.currentClaimId;
+        if (!claimId) {
+            alert('Ошибка: не найден ID претензии');
+            return;
+        }
+        
         const defectProofType = selectedProof.value;
         const defectProofDocumentDescription = document.getElementById('defectProofDocumentDescription').value;
         const defectProofDocumentDate = document.getElementById('defectProofDocumentDate').value;
@@ -1766,21 +1838,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Проверяем ответ на вопрос о схожести недостатка
         const selectedSimilarity = document.querySelector('input[name="defect_similarity"]:checked');
         let defectDescription = '';
+        let defectSimilarity = false;
         
         if (selectedSimilarity && selectedSimilarity.value === '0') {
             // Если выбрано "Нет", берем описание из поля
             defectDescription = document.getElementById('defectDescription').value;
+            defectSimilarity = false;
             
             // Валидация: проверяем, что описание недостатка не пустое
             if (!defectDescription || defectDescription.trim() === '') {
                 showFieldError('defectDescription', 'Поле не может быть пустым');
                 return;
             }
+        } else if (selectedSimilarity && selectedSimilarity.value === '1') {
+            // Если выбрано "Да", определяем источник описания недостатка
+            const repairDefectDescription = document.getElementById('repairDefectDescription').value;
+            const currentDefectDescription = document.getElementById('currentDefectDescription').value;
+            defectSimilarity = true;
+            
+            // Сначала проверяем поле ремонта
+            if (repairDefectDescription && repairDefectDescription.trim() !== '') {
+                defectDescription = repairDefectDescription;
+            } else if (currentDefectDescription && currentDefectDescription.trim() !== '') {
+                // Если поле ремонта пустое, берем из поля текущего недостатка
+                defectDescription = currentDefectDescription;
+            }
+            
+            // Валидация: проверяем, что описание недостатка не пустое
+            if (!defectDescription || defectDescription.trim() === '') {
+                // Показываем ошибку на том поле, которое должно быть заполнено
+                if (repairDefectDescription && repairDefectDescription.trim() !== '') {
+                    showFieldError('repairDefectDescription', 'Поле не может быть пустым');
+                } else {
+                    showFieldError('currentDefectDescription', 'Поле не может быть пустым');
+                }
+                return;
+            }
         }
-        // Если выбрано "Да", defectDescription остается пустым
         
         // Сохраняем информацию о доказательствах недостатка
-        saveDefectProofInfo(purchaseId, defectProofType, defectProofDocumentDescription, defectProofDocumentDate, defectDescription);
+        saveDefectProofInfo(claimId, defectProofType, defectProofDocumentDescription, defectProofDocumentDate, defectDescription, defectSimilarity);
         
         if (selectedProof.value === 'no_proof') {
             // Проверяем условия для показа модального окна с информацией о законе
@@ -1856,10 +1953,34 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/claims';
     };
 
-    // Функция для сохранения информации о ремонте
-    window.saveRepairInfo = function(purchaseId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription) {
+    // Функция для создания черновика претензии
+    window.createClaimDraft = function(purchaseId, claimType) {
         const formData = new FormData();
         formData.append('purchase_id', purchaseId);
+        formData.append('claim_type', claimType || '');
+        formData.append('_csrf', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+        return fetch('/claim/create-draft', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                return data.claim_id;
+            } else {
+                throw new Error(data.message || 'Ошибка создания черновика претензии');
+            }
+        });
+    };
+
+    // Функция для сохранения информации о ремонте
+    window.saveRepairInfo = function(claimId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription) {
+        const formData = new FormData();
+        formData.append('claim_id', claimId);
         formData.append('was_repaired_officially', wasRepairedOfficially ? '1' : '0');
         formData.append('repair_document_description', repairDocumentDescription || '');
         formData.append('repair_document_date', repairDocumentDate || '');
@@ -1887,13 +2008,14 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Функция для сохранения информации о доказательствах недостатка
-    window.saveDefectProofInfo = function(purchaseId, defectProofType, defectProofDocumentDescription, defectProofDocumentDate, defectDescription) {
+    window.saveDefectProofInfo = function(claimId, defectProofType, defectProofDocumentDescription, defectProofDocumentDate, defectDescription, defectSimilarity) {
         const formData = new FormData();
-        formData.append('purchase_id', purchaseId);
+        formData.append('claim_id', claimId);
         formData.append('defect_proof_type', defectProofType);
         formData.append('defect_proof_document_description', defectProofDocumentDescription || '');
         formData.append('defect_proof_document_date', defectProofDocumentDate || '');
         formData.append('defect_description', defectDescription || '');
+        formData.append('defect_similarity', defectSimilarity ? '1' : '0');
         formData.append('_csrf', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
         fetch('/claim/save-defect-proof-info', {

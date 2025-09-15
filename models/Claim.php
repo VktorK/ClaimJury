@@ -29,6 +29,16 @@ use yii\behaviors\TimestampBehavior;
  * @property int|null $last_tracking_update
  * @property int $created_at
  * @property int $updated_at
+ * @property bool $was_repaired_officially
+ * @property string|null $repair_document_description
+ * @property string|null $repair_document_date
+ * @property string|null $repair_defect_description
+ * @property string|null $current_defect_description
+ * @property string|null $expertise_defect_description
+ * @property string|null $defect_proof_type
+ * @property string|null $defect_proof_document_description
+ * @property string|null $defect_proof_document_date
+ * @property bool|null $defect_similarity
  *
  * @property User $user
  * @property Purchase $purchase
@@ -76,7 +86,9 @@ class Claim extends ActiveRecord
         return [
             [['user_id', 'purchase_id', 'claim_type', 'claim_date'], 'required'],
             [['user_id', 'purchase_id', 'claim_date', 'resolution_date', 'document_sent_date', 'document_received_date', 'last_tracking_update', 'created_at', 'updated_at'], 'integer'],
-            [['description', 'resolution_notes', 'tracking_details'], 'string'],
+            [['description', 'resolution_notes', 'tracking_details', 'repair_document_description', 'repair_defect_description', 'current_defect_description', 'expertise_defect_description', 'defect_proof_document_description'], 'string'],
+            [['was_repaired_officially', 'defect_similarity'], 'boolean'],
+            [['repair_document_date', 'defect_proof_document_date'], 'date', 'format' => 'php:Y-m-d'],
             [['amount_claimed', 'amount_resolved'], 'number'],
             [['claim_type'], 'string', 'max' => 50],
             [['status'], 'string', 'max' => 20],
@@ -113,6 +125,16 @@ class Claim extends ActiveRecord
             'tracking_status' => 'Статус отслеживания',
             'tracking_details' => 'Детали отслеживания',
             'last_tracking_update' => 'Последнее обновление отслеживания',
+            'was_repaired_officially' => 'Товар ремонтировался официально',
+            'repair_document_description' => 'Описание документа о ремонте',
+            'repair_document_date' => 'Дата документа о ремонте',
+            'repair_defect_description' => 'Описание недостатка согласно акту выполненных работ',
+            'current_defect_description' => 'Описание текущего недостатка',
+            'expertise_defect_description' => 'Описание недостатка для экспертизы',
+            'defect_proof_type' => 'Тип доказательства недостатка',
+            'defect_proof_document_description' => 'Описание документа доказательства',
+            'defect_proof_document_date' => 'Дата документа доказательства',
+            'defect_similarity' => 'Недостаток аналогичный указанному',
             'created_at' => 'Дата создания',
             'updated_at' => 'Дата обновления',
         ];

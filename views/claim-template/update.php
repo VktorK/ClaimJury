@@ -476,6 +476,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('template-content');
     if (textarea) {
         textarea.addEventListener('input', updateStats);
+        
+        // Сохраняем позицию курсора при изменении содержимого
+        textarea.addEventListener('input', function() {
+            // Небольшая задержка для корректного обновления
+            setTimeout(() => {
+                updateStats();
+            }, 10);
+        });
+        
+        // Сохраняем позицию курсора при вставке
+        textarea.addEventListener('paste', function() {
+            setTimeout(() => {
+                updateStats();
+            }, 10);
+        });
     }
 });
 
@@ -528,11 +543,15 @@ function insertPlaceholder(placeholder) {
     
     // Устанавливаем курсор после вставленного плейсхолдера
     const newPosition = start + placeholder.length;
-    textarea.setSelectionRange(newPosition, newPosition);
-    textarea.focus();
     
-    // Обновляем статистику
-    updateStats();
+    // Используем requestAnimationFrame для корректного обновления позиции курсора
+    requestAnimationFrame(() => {
+        textarea.setSelectionRange(newPosition, newPosition);
+        textarea.focus();
+        
+        // Обновляем статистику
+        updateStats();
+    });
 }
 
 function updateStats() {

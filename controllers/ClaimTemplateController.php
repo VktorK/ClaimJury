@@ -10,6 +10,7 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\web\Response;
 use yii\helpers\Json;
+use yii\helpers\Html;
 
 /**
  * ClaimTemplateController implements the CRUD actions for ClaimTemplate model.
@@ -351,5 +352,133 @@ class ClaimTemplateController extends Controller
         $content = str_replace('{CURRENT_DATE}', $data['system']['current_date'], $content);
         
         return $content;
+    }
+    
+    /**
+     * Форматирует содержимое шаблона для корректного отображения
+     * @param string $content
+     * @return string
+     */
+    public function formatTemplateContent($content)
+    {
+        // Разбиваем содержимое на строки
+        $lines = explode("\n", $content);
+        $formattedLines = [];
+        
+        foreach ($lines as $line) {
+            $trimmedLine = trim($line);
+            
+            // Если строка пустая, добавляем пустую строку
+            if (empty($trimmedLine)) {
+                $formattedLines[] = '<div class="template-line template-line-empty"></div>';
+                continue;
+            }
+            
+            // Проверяем, является ли строка заголовком (ПРЕТЕНЗИЯ)
+            if (preg_match('/^ПРЕТЕНЗИЯ$/', $trimmedLine)) {
+                $formattedLines[] = '<div class="template-line template-line-title">' . Html::encode($trimmedLine) . '</div>';
+                continue;
+            }
+            
+            // Специальная обработка для строки с датой и подписью (должна быть перед обработкой полей)
+            if (preg_match('/Дата:\s*(.+?)\s+Подпись:\s*(.+)/', $trimmedLine, $matches)) {
+                $dateValue = trim($matches[1]);
+                $signatureValue = trim($matches[2]);
+                
+                $formattedLines[] = '<div class="template-line template-line-field">' . 
+                    '<span class="template-label">Дата:</span> ' . 
+                    '<span class="template-value">' . Html::encode($dateValue) . '</span>' . 
+                    '</div>';
+                $formattedLines[] = '<div class="template-line template-line-field">' . 
+                    '<span class="template-label">Подпись:</span> ' . 
+                    '<span class="template-value">' . Html::encode($signatureValue) . '</span>' . 
+                    '</div>';
+                continue;
+            }
+            
+            // Проверяем, является ли строка полем с двоеточием (Кому:, От:, и т.д.)
+            if (preg_match('/^([^:]+):\s*(.*)$/', $trimmedLine, $matches)) {
+                $label = trim($matches[1]);
+                $value = trim($matches[2]);
+                
+                // Специальная обработка для длинных строк с информацией о покупке
+                if (strlen($label) > 50 || (strlen($value) > 50 && strpos($value, 'был заключен договор') !== false)) {
+                    // Это длинная строка с информацией о покупке - обрабатываем как обычный текст
+                    $formattedLines[] = '<div class="template-line template-line-text">' . Html::encode($trimmedLine) . '</div>';
+                    continue;
+                }
+                
+                if (!empty($value)) {
+                    // Если значение очень длинное, разбиваем его на части
+                    if (strlen($value) > 80) {
+                        $words = explode(' ', $value);
+                        $currentLine = '';
+                        $lines = [];
+                        
+                        foreach ($words as $word) {
+                            if (strlen($currentLine . ' ' . $word) > 80) {
+                                if (!empty($currentLine)) {
+                                    $lines[] = $currentLine;
+                                }
+                                $currentLine = $word;
+                            } else {
+                                $currentLine .= ($currentLine ? ' ' : '') . $word;
+                            }
+                        }
+                        if (!empty($currentLine)) {
+                            $lines[] = $currentLine;
+                        }
+                        
+                        $formattedLines[] = '<div class="template-line template-line-field">' . 
+                            '<span class="template-label">' . Html::encode($label) . ':</span> ' . 
+                            '<span class="template-value">' . Html::encode($lines[0]) . '</span>' . 
+                            '</div>';
+                        
+                        for ($i = 1; $i < count($lines); $i++) {
+                            $formattedLines[] = '<div class="template-line template-line-field template-line-continuation">' . 
+                                '<span class="template-value">' . Html::encode($lines[$i]) . '</span>' . 
+                                '</div>';
+                        }
+                    } else {
+                        $formattedLines[] = '<div class="template-line template-line-field">' . 
+                            '<span class="template-label">' . Html::encode($label) . ':</span> ' . 
+                            '<span class="template-value">' . Html::encode($value) . '</span>' . 
+                            '</div>';
+                    }
+                } else {
+                    $formattedLines[] = '<div class="template-line template-line-field">' . 
+                        '<span class="template-label">' . Html::encode($label) . ':</span>' . 
+                        '</div>';
+                }
+                continue;
+            }
+            
+            // Проверяем, является ли строка пунктом списка (1), 2), и т.д.)
+            if (preg_match('/^(\d+)\)\s*(.*)$/', $trimmedLine, $matches)) {
+                $number = $matches[1];
+                $text = trim($matches[2]);
+                $formattedLines[] = '<div class="template-line template-line-item">' . 
+                    '<span class="template-item-number">' . Html::encode($number) . ')</span> ' . 
+                    '<span class="template-item-text">' . Html::encode($text) . '</span>' . 
+                    '</div>';
+                continue;
+            }
+            
+            // Проверяем, является ли строка элементом списка с дефисом (-)
+            if (preg_match('/^-\s*(.*)$/', $trimmedLine, $matches)) {
+                $text = trim($matches[1]);
+                $formattedLines[] = '<div class="template-line template-line-list">' . 
+                    '<span class="template-list-marker">-</span> ' . 
+                    '<span class="template-list-text">' . Html::encode($text) . '</span>' . 
+                    '</div>';
+                continue;
+            }
+            
+            
+            // Обычный текст
+            $formattedLines[] = '<div class="template-line template-line-text">' . Html::encode($trimmedLine) . '</div>';
+        }
+        
+        return implode("\n", $formattedLines);
     }
 }
