@@ -409,7 +409,7 @@ class Claim extends ActiveRecord
             return false;
         }
 
-        $this->description = $template->fillTemplate($this->purchase);
+        $this->description = $template->fillTemplate($this->purchase, $this);
         return true;
     }
 
@@ -444,5 +444,31 @@ class Claim extends ActiveRecord
     public function getLastPackage()
     {
         return $this->hasOne(Package::class, ['claim_id' => 'id'])->orderBy(['last_check' => SORT_DESC]);
+    }
+
+    /**
+     * Получить метку статуса ремонта
+     * @return string
+     */
+    public function getRepairStatusLabel()
+    {
+        return $this->was_repaired_officially ? 'Да' : 'Нет';
+    }
+
+    /**
+     * Получить метку типа доказательства недостатка
+     * @return string
+     */
+    public function getDefectProofTypeLabel()
+    {
+        $labels = [
+            'quality_check' => 'Проверка качества',
+            'independent_expertise' => 'Независимая экспертиза',
+            'warranty_service' => 'Сервисный центр',
+            'seller_admission' => 'Признание продавца',
+            'other' => 'Другое'
+        ];
+
+        return $labels[$this->defect_proof_type] ?? 'Не указано';
     }
 }

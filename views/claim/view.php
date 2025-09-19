@@ -121,32 +121,35 @@ $this->params['breadcrumbs'][] = $this->title;
                         </h3>
                     </div>
                     <div class="card-body" id="repair-info-body">
+                        
                         <div class="repair-info-grid">
                             <!-- Информация о ремонте -->
                             <div class="repair-section">
                                 <h4><i class="fas fa-wrench"></i> Информация о ремонте</h4>
-                                <?php if ($model->purchase->was_repaired_officially): ?>
+                                
+                                
+                                <?php if ($model->was_repaired_officially): ?>
                                     <div class="info-item">
                                         <label>Реквизиты акта выполненных работ:</label>
-                                        <span class="repair-document"><?= Html::encode($model->purchase->repair_document_description ?: 'Не указано') ?></span>
+                                        <span class="repair-document"><?= Html::encode($model->repair_document_description ?: 'Не указано') ?></span>
                                     </div>
                                     
                                     <div class="info-item">
                                         <label>Дата выдачи документа о ремонте:</label>
-                                        <span class="repair-date"><?= $model->purchase->repair_document_date ? Yii::$app->formatter->asDate($model->purchase->repair_document_date, 'php:d.m.Y') : 'Не указана' ?></span>
+                                        <span class="repair-date"><?= $model->repair_document_date ? Yii::$app->formatter->asDate($model->repair_document_date, 'php:d.m.Y') : 'Не указана' ?></span>
                                     </div>
                                     
-                                    <?php if ($model->purchase->repair_defect_description): ?>
+                                    <?php if ($model->repair_defect_description): ?>
                                         <div class="info-item">
                                             <label>Недостаток согласно акту выполненных работ:</label>
-                                            <span class="repair-defect"><?= Html::encode($model->purchase->repair_defect_description) ?></span>
+                                            <span class="repair-defect"><?= Html::encode($model->repair_defect_description) ?></span>
                                         </div>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <?php if ($model->purchase->current_defect_description): ?>
+                                    <?php if ($model->current_defect_description): ?>
                                         <div class="info-item">
                                             <label>Описание текущего недостатка:</label>
-                                            <span class="current-defect"><?= Html::encode($model->purchase->current_defect_description) ?></span>
+                                            <span class="current-defect"><?= Html::encode($model->current_defect_description) ?></span>
                                         </div>
                                     <?php endif; ?>
                                 <?php endif; ?>
@@ -155,33 +158,28 @@ $this->params['breadcrumbs'][] = $this->title;
                             <!-- Информация о доказательствах недостатка -->
                             <div class="proof-section">
                                 <h4><i class="fas fa-file-medical"></i> Доказательства недостатка</h4>
+                                
+                                
                                 <div class="info-item">
                                     <label>Тип доказательства:</label>
-                                    <span class="proof-type"><?= $model->purchase->getDefectProofTypeLabel() ?></span>
+                                    <span class="proof-type"><?= $model->getDefectProofTypeLabel() ?></span>
                                 </div>
                                 
-                                <?php if ($model->purchase->defect_proof_type === 'quality_check' || $model->purchase->defect_proof_type === 'independent_expertise'): ?>
+                                <?php if ($model->defect_proof_type === 'quality_check' || $model->defect_proof_type === 'independent_expertise'): ?>
                                     <div class="info-item">
                                         <label>Реквизиты документа:</label>
-                                        <span class="proof-document"><?= Html::encode($model->purchase->defect_proof_document_description ?: 'Не указано') ?></span>
+                                        <span class="proof-document"><?= Html::encode($model->defect_proof_document_description ?: 'Не указано') ?></span>
                                     </div>
                                     
                                     <div class="info-item">
                                         <label>Дата выдачи документа:</label>
-                                        <span class="proof-date"><?= $model->purchase->defect_proof_document_date ? Yii::$app->formatter->asDate($model->purchase->defect_proof_document_date, 'php:d.m.Y') : 'Не указана' ?></span>
+                                        <span class="proof-date"><?= $model->defect_proof_document_date ? Yii::$app->formatter->asDate($model->defect_proof_document_date, 'php:d.m.Y') : 'Не указана' ?></span>
                                     </div>
                                     
-                                    <?php if ($model->purchase->expertise_defect_description): ?>
+                                    <?php if ($model->expertise_defect_description): ?>
                                         <div class="info-item">
                                             <label>Описание недостатка при экспертизе:</label>
-                                            <span class="expertise-defect"><?= Html::encode($model->purchase->expertise_defect_description) ?></span>
-                                        </div>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <?php if ($model->purchase->general_defect_description): ?>
-                                        <div class="info-item">
-                                            <label>Описание недостатка:</label>
-                                            <span class="general-defect"><?= Html::encode($model->purchase->general_defect_description) ?></span>
+                                            <span class="expertise-defect"><?= Html::encode($model->expertise_defect_description) ?></span>
                                         </div>
                                     <?php endif; ?>
                                 <?php endif; ?>
@@ -1366,7 +1364,6 @@ function openClaimTextModal() {
     const claimTextContent = document.querySelector('.claim-text-content');
     
     if (wordEditor && claimTextContent) {
-        console.log('Открытие модального окна редактирования');
         
         // Показываем индикатор загрузки
         if (loadingIndicator) {
@@ -1389,7 +1386,6 @@ function openClaimTextModal() {
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Получен HTML контент:', data);
             
             // Скрываем индикатор загрузки
             if (loadingIndicator) {
@@ -1400,10 +1396,8 @@ function openClaimTextModal() {
                 // Загружаем HTML в редактор
                 if (data.html && data.html.trim() !== '') {
                     wordEditor.innerHTML = data.html;
-                    console.log('HTML загружен в редактор:', data.html.substring(0, 100) + '...');
                 } else {
                     wordEditor.innerHTML = '';
-                    console.log('HTML контент пустой');
                 }
                 
                 // Фокусируемся на редакторе и обновляем панель инструментов
@@ -1412,12 +1406,10 @@ function openClaimTextModal() {
                     updateClaimTextToolbarState();
                 }, 100);
             } else {
-                console.error('Ошибка загрузки HTML:', data.message);
                 wordEditor.innerHTML = '';
             }
         })
         .catch(error => {
-            console.error('Ошибка загрузки HTML контента:', error);
             
             // Скрываем индикатор загрузки при ошибке
             if (loadingIndicator) {
@@ -1435,7 +1427,6 @@ function saveClaimText() {
     const wordEditor = document.getElementById('claim-text-editor');
     const content = wordEditor ? wordEditor.innerHTML : '';
     
-    console.log('Сохранение текста претензии:', content.substring(0, 100) + '...');
     
     // Конвертируем HTML в простой текст для отображения
     const tempDiv = document.createElement('div');
@@ -1478,10 +1469,6 @@ function saveClaimText() {
         formData.append('_csrf', csrfToken.getAttribute('content'));
     }
     
-    console.log('Отправка данных на сервер:', {
-        description: content.substring(0, 100) + '...',
-        csrf: csrfToken ? csrfToken.getAttribute('content') : 'НЕТ'
-    });
     
     fetch('/claim/update-template?id=<?= $model->id ?>', {
         method: 'POST',
@@ -1491,11 +1478,9 @@ function saveClaimText() {
         }
     })
     .then(response => {
-        console.log('Ответ сервера:', response.status);
         return response.json();
     })
     .then(data => {
-        console.log('Данные ответа:', data);
         if (data.success) {
             // Показываем уведомление об успешном сохранении
             alert('Текст претензии успешно сохранен!');
@@ -1506,12 +1491,10 @@ function saveClaimText() {
                 modal.hide();
             }
         } else {
-            console.error('Ошибка сохранения текста претензии:', data.message);
             alert('Ошибка при сохранении: ' + (data.message || 'Неизвестная ошибка'));
         }
     })
     .catch(error => {
-        console.error('Ошибка сохранения текста претензии:', error);
         alert('Ошибка при сохранении: ' + error.message);
     });
 }
@@ -1599,7 +1582,6 @@ async function downloadClaimText() {
         window.URL.revokeObjectURL(url);
         
     } catch (error) {
-        console.error('Ошибка при создании DOCX файла:', error);
     } finally {
         // Восстанавливаем кнопку
         button.innerHTML = originalText;
@@ -1668,7 +1650,6 @@ window.checkTrackingStatus = async function() {
         }
         
     } catch (error) {
-        console.error('Ошибка при проверке статуса отслеживания:', error);
         statusDisplay.textContent = 'Ошибка при проверке статуса';
         statusDisplay.className = 'tracking-status no-info';
     } finally {
@@ -1789,7 +1770,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const claimTextBody = document.getElementById('claim-text-body');
     const repairBody = document.getElementById('repair-info-body');
     
-    // Делаем все секции закрытыми по умолчанию
+    // Делаем секцию текста претензии закрытой по умолчанию
     if (claimTextBody) {
         const claimTextHeight = claimTextBody.scrollHeight;
         claimTextBody.style.maxHeight = claimTextHeight + 'px';
@@ -1803,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Делаем секцию информации о ремонте закрытой по умолчанию
     if (repairBody) {
         const repairHeight = repairBody.scrollHeight;
         repairBody.style.maxHeight = repairHeight + 'px';
@@ -1816,7 +1798,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Поворачиваем иконки вправо (закрытое состояние)
+    
+    // Поворачиваем все иконки вправо (закрытое состояние)
     const collapseIcons = document.querySelectorAll('.collapse-icon');
     collapseIcons.forEach(icon => {
         icon.classList.add('collapsed');

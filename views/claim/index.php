@@ -314,12 +314,15 @@ $this->params['breadcrumbs'][] = $this->title;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: 0 0 15px 15px;
+    width: 100%;
+    max-width: 100%;
 }
 
 .table {
     margin: 0;
-    min-width: 100%; /* Используем всю доступную ширину */
     width: 100%;
+    max-width: 100%;
+    table-layout: fixed; /* Фиксированная разметка таблицы */
 }
 
 .table th {
@@ -331,51 +334,60 @@ $this->params['breadcrumbs'][] = $this->title;
     color: #495057;
     border-bottom: 2px solid #dee2e6;
     padding: 12px 8px;
-    white-space: nowrap; /* Предотвращаем перенос текста в заголовках */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .table td {
     font-size: 0.85rem;
     padding: 12px 8px;
     vertical-align: middle;
-    white-space: nowrap; /* Предотвращаем перенос текста в ячейках */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Расширенные колонки для использования всего пространства */
+/* Адаптивные колонки с процентами */
 .table th:nth-child(1),
 .table td:nth-child(1) {
-    width: 60px; /* Номер */
+    width: 8%; /* Номер */
 }
 
 .table th:nth-child(2),
 .table td:nth-child(2) {
-    width: 200px; /* Тип претензии */
+    width: 25%; /* Тип претензии */
 }
 
 .table th:nth-child(3),
 .table td:nth-child(3) {
-    width: 300px; /* Покупка */
+    width: 30%; /* Покупка */
 }
 
 .table th:nth-child(4),
 .table td:nth-child(4) {
-    width: 150px; /* Статус */
+    width: 15%; /* Статус */
 }
 
 .table th:nth-child(5),
 .table td:nth-child(5) {
-    width: 150px; /* Дата */
+    width: 12%; /* Дата */
 }
 
 .table th:nth-child(6),
 .table td:nth-child(6) {
-    width: 150px; /* Действия */
+    width: 10%; /* Действия */
 }
 
 .claim-title-link {
     color: #8B5CF6;
     font-weight: 600;
     text-decoration: none;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .claim-title-link:hover {
@@ -387,6 +399,11 @@ $this->params['breadcrumbs'][] = $this->title;
     color: #059669;
     font-weight: 500;
     text-decoration: none;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .purchase-link:hover {
@@ -445,27 +462,27 @@ $this->params['breadcrumbs'][] = $this->title;
     
     .table th:nth-child(2),
     .table td:nth-child(2) {
-        width: 150px; /* Уменьшаем тип претензии */
+        width: 20%; /* Уменьшаем тип претензии */
     }
     
     .table th:nth-child(3),
     .table td:nth-child(3) {
-        width: 200px; /* Уменьшаем покупку */
+        width: 35%; /* Увеличиваем покупку */
     }
     
     .table th:nth-child(4),
     .table td:nth-child(4) {
-        width: 120px;
+        width: 15%;
     }
     
     .table th:nth-child(5),
     .table td:nth-child(5) {
-        width: 120px;
+        width: 12%;
     }
     
     .table th:nth-child(6),
     .table td:nth-child(6) {
-        width: 120px;
+        width: 10%;
     }
 }
 
@@ -482,27 +499,27 @@ $this->params['breadcrumbs'][] = $this->title;
     
     .table th:nth-child(2),
     .table td:nth-child(2) {
-        width: 120px;
+        width: 18%; /* Уменьшаем тип претензии */
     }
     
     .table th:nth-child(3),
     .table td:nth-child(3) {
-        width: 150px;
+        width: 40%; /* Увеличиваем покупку */
     }
     
     .table th:nth-child(4),
     .table td:nth-child(4) {
-        width: 100px;
+        width: 15%;
     }
     
     .table th:nth-child(5),
     .table td:nth-child(5) {
-        width: 100px;
+        width: 12%;
     }
     
     .table th:nth-child(6),
     .table td:nth-child(6) {
-        width: 100px;
+        width: 10%;
     }
     
     .btn-group .btn {
@@ -517,38 +534,40 @@ $this->params['breadcrumbs'][] = $this->title;
     }
     
     .table {
-        min-width: 600px; /* Включаем горизонтальную прокрутку на мобильных */
+        min-width: 100%; /* Используем всю доступную ширину */
+        table-layout: auto; /* Автоматическая разметка для мобильных */
     }
     
     .table th,
     .table td {
         padding: 4px 2px;
         font-size: 0.7rem;
+        white-space: normal; /* Разрешаем перенос текста на мобильных */
     }
     
     .table th:nth-child(2),
     .table td:nth-child(2) {
-        width: 100px;
+        width: 15%; /* Тип претензии */
     }
     
     .table th:nth-child(3),
     .table td:nth-child(3) {
-        width: 120px;
+        width: 45%; /* Покупка - больше места */
     }
     
     .table th:nth-child(4),
     .table td:nth-child(4) {
-        width: 80px;
+        width: 15%; /* Статус */
     }
     
     .table th:nth-child(5),
     .table td:nth-child(5) {
-        width: 90px;
+        width: 12%; /* Дата */
     }
     
     .table th:nth-child(6),
     .table td:nth-child(6) {
-        width: 90px;
+        width: 10%; /* Действия */
     }
     
     .btn-group {
@@ -569,38 +588,40 @@ $this->params['breadcrumbs'][] = $this->title;
 
 @media (max-width: 480px) {
     .table {
-        min-width: 500px; /* Минимальная ширина для очень маленьких экранов */
+        min-width: 100%; /* Используем всю доступную ширину */
+        table-layout: auto; /* Автоматическая разметка */
     }
     
     .table th,
     .table td {
         padding: 3px 1px;
         font-size: 0.65rem;
+        white-space: normal; /* Разрешаем перенос текста */
     }
     
     .table th:nth-child(2),
     .table td:nth-child(2) {
-        width: 80px;
+        width: 12%; /* Тип претензии */
     }
     
     .table th:nth-child(3),
     .table td:nth-child(3) {
-        width: 100px;
+        width: 50%; /* Покупка - максимум места */
     }
     
     .table th:nth-child(4),
     .table td:nth-child(4) {
-        width: 70px;
+        width: 15%; /* Статус */
     }
     
     .table th:nth-child(5),
     .table td:nth-child(5) {
-        width: 80px;
+        width: 13%; /* Дата */
     }
     
     .table th:nth-child(6),
     .table td:nth-child(6) {
-        width: 80px;
+        width: 10%; /* Действия */
     }
     
     .btn-group .btn {

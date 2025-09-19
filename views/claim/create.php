@@ -44,6 +44,9 @@ $this->params['breadcrumbs'][] = $this->title;
                         
                         <!-- Скрытое поле для передачи ID покупки -->
                         <?= Html::hiddenInput('purchase_id', $model->purchase_id, ['id' => 'purchase_id']) ?>
+                        
+                        <!-- Скрытое поле для передачи ID существующего черновика -->
+                        <?= Html::hiddenInput('existing_claim_id', $model->id ?: '', ['id' => 'existing_claim_id']) ?>
                         <?php if ($model->purchase_id): ?>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle"></i> 
@@ -834,6 +837,36 @@ select option {
     margin: 4px 0;
 }
 
+/* Стили для заголовков */
+.word-editor h3 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 16px 0 8px 0;
+    color: #2c3e50;
+    text-transform: uppercase;
+}
+
+.word-editor h4 {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 12px 0 6px 0;
+    color: #34495e;
+}
+
+/* Стили для отступов */
+.word-editor span[style*="margin-left"] {
+    display: inline-block;
+}
+
+/* Стили для форматирования текста */
+.word-editor strong {
+    font-weight: bold;
+}
+
+.word-editor em {
+    font-style: italic;
+}
+
 /* Стили для табуляции */
 .word-editor {
     tab-size: 4;
@@ -1070,7 +1103,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         hiddenField.value = content;
         
-        console.log('Описание сохранено из модального окна:', content.substring(0, 100) + '...');
         
         // Закрываем модальное окно
         const modal = bootstrap.Modal.getInstance(document.getElementById('descriptionModal'));
@@ -1079,7 +1111,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработчик отправки формы - сохраняем все данные перед отправкой
     document.querySelector('form').addEventListener('submit', function(e) {
-        console.log('Форма отправляется...');
         
         // Получаем содержимое из Word-редактора, если модальное окно было открыто
         const wordEditor = document.getElementById('word-editor');
@@ -1097,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             hiddenField.value = content;
             
-            console.log('Содержимое претензии сохранено из Word-редактора:', content.substring(0, 100) + '...');
+            // console.log('Содержимое претензии сохранено из Word-редактора:', content.substring(0, 100) + '...');
         }
         
         // Также проверяем содержимое из превью, если модальное окно не открывалось
@@ -1115,19 +1146,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Если поле пустое, заполняем его содержимым из превью
             if (!hiddenField.value || hiddenField.value.trim() === '') {
                 hiddenField.value = previewContent.replace(/\n/g, '<br>');
-                console.log('Содержимое претензии взято из превью:', previewContent.substring(0, 100) + '...');
+                // console.log('Содержимое претензии взято из превью:', previewContent.substring(0, 100) + '...');
             }
         }
         
         // Проверяем все скрытые поля в форме
         const allHiddenFields = document.querySelectorAll('form input[type="hidden"]');
-        console.log('Все скрытые поля в форме:');
+        // console.log('Все скрытые поля в форме:');
         allHiddenFields.forEach(field => {
-            console.log(`  ${field.name}: ${field.value.substring(0, 50)}...`);
+            // console.log(`  ${field.name}: ${field.value.substring(0, 50)}...`);
         });
         
         const finalDescription = document.getElementById('claim-description-hidden')?.value;
-        console.log('Финальное содержимое поля description:', finalDescription ? finalDescription.substring(0, 100) + '...' : 'НЕТ');
+        // console.log('Финальное содержимое поля description:', finalDescription ? finalDescription.substring(0, 100) + '...' : 'НЕТ');
         
         // Дополнительная проверка - убеждаемся, что поле есть в форме
         if (!finalDescription || finalDescription.trim() === '') {
@@ -1135,7 +1166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Попробуем найти содержимое в других местах
             const alternativeContent = wordEditor?.innerHTML || descriptionPreview.querySelector('p')?.textContent;
             if (alternativeContent && alternativeContent.trim() !== '') {
-                console.log('Найдено альтернативное содержимое:', alternativeContent.substring(0, 100) + '...');
+                // console.log('Найдено альтернативное содержимое:', alternativeContent.substring(0, 100) + '...');
                 let hiddenField = document.getElementById('claim-description-hidden');
                 if (!hiddenField) {
                     hiddenField = document.createElement('input');
@@ -1145,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.querySelector('form').appendChild(hiddenField);
                 }
                 hiddenField.value = alternativeContent.replace(/\n/g, '<br>');
-                console.log('Альтернативное содержимое сохранено в поле description');
+                // console.log('Альтернативное содержимое сохранено в поле description');
             }
         }
         
@@ -1241,7 +1272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const hiddenField = document.getElementById('claim-description-hidden');
                 if (hiddenField && content.trim() !== '') {
                     hiddenField.value = content;
-                    console.log('Содержимое автоматически сохранено в скрытое поле');
+                    // console.log('Содержимое автоматически сохранено в скрытое поле');
                 }
             });
             wordEditor.addEventListener('selectionchange', updateToolbarState);
@@ -1365,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для проверки гарантийного срока и срока подачи претензии
     function checkWarrantyAndAppealDeadline(purchaseId) {
-        console.log('Проверка гарантийного срока для покупки:', purchaseId);
+        // console.log('Проверка гарантийного срока для покупки:', purchaseId);
         
         fetch('/claim/check-warranty?purchase_id=' + purchaseId, {
             method: 'GET',
@@ -1374,11 +1405,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
             .then(response => {
-                console.log('Ответ сервера:', response.status);
+                // console.log('Ответ сервера:', response.status);
                 return response.json();
             })
             .then(data => {
-                console.log('Данные от сервера:', data);
+                // console.log('Данные от сервера:', data);
                 
                 if (data.success) {
                     // Сохраняем дату окончания срока подачи претензии в глобальной переменной
@@ -1387,17 +1418,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Сохраняем все данные о гарантийном сроке в глобальной переменной
                     window.warrantyData = data;
                     
-                    console.log('Гарантийный срок истек:', data.warranty_expired);
-                    console.log('Срок подачи претензии истек:', data.appeal_deadline_expired);
+                    // console.log('Гарантийный срок истек:', data.warranty_expired);
+                    // console.log('Срок подачи претензии истек:', data.appeal_deadline_expired);
                     
                     // Показываем модальное окно с информацией всегда
                     showWarrantyInfoModal(data);
                 } else {
-                    console.error('Ошибка проверки гарантийного срока:', data.message);
+                    // console.error('Ошибка проверки гарантийного срока:', data.message);
                 }
             })
             .catch(error => {
-                console.error('Ошибка проверки гарантийного срока:', error);
+                // console.error('Ошибка проверки гарантийного срока:', error);
             });
     }
 
@@ -1577,23 +1608,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для обработки вопроса о ремонте
     window.handleRepairQuestion = function() {
+        // console.log('handleRepairQuestion вызвана');
+        
         // Очищаем все предыдущие ошибки
         clearAllErrors();
         
         const selectedRepair = document.querySelector('input[name="wasRepaired"]:checked');
+        // console.log('selectedRepair:', selectedRepair);
         
         if (!selectedRepair) {
             alert('Пожалуйста, выберите один из вариантов');
             return;
         }
         
-        const purchaseId = document.getElementById('purchase_id').value;
-        const claimType = document.getElementById('claim-type').value;
+        // Проверяем существование элементов перед получением их значений
+        const purchaseIdElement = document.getElementById('purchase_id');
+        const claimTypeElement = document.getElementById('claim-type-select');
+        const repairDocumentDescriptionElement = document.getElementById('repairDocumentDescription');
+        const repairDocumentDateElement = document.getElementById('repairDocumentDate');
+        const repairDefectDescriptionElement = document.getElementById('repairDefectDescription');
+        const currentDefectDescriptionElement = document.getElementById('currentDefectDescription');
+        
+        // console.log('purchaseIdElement:', purchaseIdElement);
+        // console.log('claimTypeElement:', claimTypeElement);
+        // console.log('repairDocumentDescriptionElement:', repairDocumentDescriptionElement);
+        // console.log('repairDocumentDateElement:', repairDocumentDateElement);
+        // console.log('repairDefectDescriptionElement:', repairDefectDescriptionElement);
+        // console.log('currentDefectDescriptionElement:', currentDefectDescriptionElement);
+        
+        if (!purchaseIdElement) {
+            // console.error('Элемент purchase_id не найден');
+            alert('Ошибка: элемент purchase_id не найден на странице');
+            return;
+        }
+        
+        if (!claimTypeElement) {
+            // console.error('Элемент claim-type-select не найден');
+            alert('Ошибка: элемент claim-type-select не найден на странице');
+            return;
+        }
+        
+        const purchaseId = purchaseIdElement.value;
+        const claimType = claimTypeElement.value;
         const wasRepairedOfficially = selectedRepair.value === '1';
-        const repairDocumentDescription = document.getElementById('repairDocumentDescription').value;
-        const repairDocumentDate = document.getElementById('repairDocumentDate').value;
-        const repairDefectDescription = document.getElementById('repairDefectDescription').value;
-        const currentDefectDescription = document.getElementById('currentDefectDescription').value;
+        const repairDocumentDescription = repairDocumentDescriptionElement ? repairDocumentDescriptionElement.value : '';
+        const repairDocumentDate = repairDocumentDateElement ? repairDocumentDateElement.value : '';
+        const repairDefectDescription = repairDefectDescriptionElement ? repairDefectDescriptionElement.value : '';
+        const currentDefectDescription = currentDefectDescriptionElement ? currentDefectDescriptionElement.value : '';
         
         // Определяем описание недостатка в зависимости от выбора
         const defectDescription = wasRepairedOfficially ? repairDefectDescription : currentDefectDescription;
@@ -1610,6 +1671,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(claimId => {
                 // Сохраняем claim_id для дальнейшего использования
                 window.currentClaimId = claimId;
+                
+                // Обновляем скрытое поле в форме
+                const existingClaimIdField = document.getElementById('existing_claim_id');
+                if (existingClaimIdField) {
+                    existingClaimIdField.value = claimId;
+                }
+                
                 return saveRepairInfo(claimId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription);
             })
             .then(() => {
@@ -1621,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showDefectProofModal();
             })
             .catch(error => {
-                console.error('Ошибка при обработке вопроса о ремонте:', error);
+                // console.error('Ошибка при обработке вопроса о ремонте:', error);
                 alert('Ошибка при сохранении информации о ремонте');
             });
     };
@@ -1979,6 +2047,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для сохранения информации о ремонте
     window.saveRepairInfo = function(claimId, wasRepairedOfficially, repairDocumentDescription, repairDocumentDate, defectDescription) {
+        // console.log('saveRepairInfo вызвана с параметрами:', {
+            claimId,
+            wasRepairedOfficially,
+            repairDocumentDescription,
+            repairDocumentDate,
+            defectDescription
+        });
+        
         const formData = new FormData();
         formData.append('claim_id', claimId);
         formData.append('was_repaired_officially', wasRepairedOfficially ? '1' : '0');
@@ -1997,18 +2073,27 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Информация о ремонте сохранена успешно');
+                // console.log('Информация о ремонте сохранена успешно');
             } else {
-                console.error('Ошибка сохранения информации о ремонте:', data.message);
+                // console.error('Ошибка сохранения информации о ремонте:', data.message);
             }
         })
         .catch(error => {
-            console.error('Ошибка сохранения информации о ремонте:', error);
+            // console.error('Ошибка сохранения информации о ремонте:', error);
         });
     };
 
     // Функция для сохранения информации о доказательствах недостатка
     window.saveDefectProofInfo = function(claimId, defectProofType, defectProofDocumentDescription, defectProofDocumentDate, defectDescription, defectSimilarity) {
+        // console.log('saveDefectProofInfo вызвана с параметрами:', {
+            claimId,
+            defectProofType,
+            defectProofDocumentDescription,
+            defectProofDocumentDate,
+            defectDescription,
+            defectSimilarity
+        });
+        
         const formData = new FormData();
         formData.append('claim_id', claimId);
         formData.append('defect_proof_type', defectProofType);
@@ -2028,13 +2113,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Информация о доказательствах недостатка сохранена успешно');
+                // console.log('Информация о доказательствах недостатка сохранена успешно');
             } else {
-                console.error('Ошибка сохранения информации о доказательствах недостатка:', data.message);
+                // console.error('Ошибка сохранения информации о доказательствах недостатка:', data.message);
             }
         })
         .catch(error => {
-            console.error('Ошибка сохранения информации о доказательствах недостатка:', error);
+            // console.error('Ошибка сохранения информации о доказательствах недостатка:', error);
         });
     };
 
@@ -2097,9 +2182,112 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(applyDropdownStyles, 50);
             })
             .catch(error => {
-                console.error('Ошибка загрузки шаблонов:', error);
+                // console.error('Ошибка загрузки шаблонов:', error);
                 templateSelect.innerHTML = '<option value="">Ошибка загрузки</option>';
             });
+    }
+
+    // Функция для конвертации текста в HTML с сохранением форматирования
+    function convertTextToHtml(text) {
+        if (!text) return '';
+        
+        // Разбиваем текст на строки
+        const lines = text.split('\n');
+        let html = '';
+        let inList = false;
+        let listType = '';
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // Пропускаем пустые строки в начале
+            if (!trimmedLine && !html) continue;
+            
+            // Определяем тип строки
+            if (trimmedLine.match(/^\d+[\.\)]\s/)) {
+                // Нумерованный список
+                if (!inList || listType !== 'ol') {
+                    if (inList) html += `</${listType}>`;
+                    html += '<ol>';
+                    inList = true;
+                    listType = 'ol';
+                }
+                const content = trimmedLine.replace(/^\d+[\.\)]\s/, '');
+                html += `<li>${escapeHtml(content)}</li>`;
+            } else if (trimmedLine.match(/^[-*]\s/)) {
+                // Маркированный список
+                if (!inList || listType !== 'ul') {
+                    if (inList) html += `</${listType}>`;
+                    html += '<ul>';
+                    inList = true;
+                    listType = 'ul';
+                }
+                const content = trimmedLine.replace(/^[-*]\s/, '');
+                html += `<li>${escapeHtml(content)}</li>`;
+            } else if (trimmedLine.match(/^[А-ЯЁ][А-ЯЁ\s]+$/)) {
+                // Заголовок (все заглавные буквы)
+                if (inList) {
+                    html += `</${listType}>`;
+                    inList = false;
+                }
+                html += `<h3>${escapeHtml(trimmedLine)}</h3>`;
+            } else if (trimmedLine.match(/^[А-ЯЁ][а-яё\s]+:$/)) {
+                // Подзаголовок (заканчивается двоеточием)
+                if (inList) {
+                    html += `</${listType}>`;
+                    inList = false;
+                }
+                html += `<h4>${escapeHtml(trimmedLine)}</h4>`;
+            } else if (trimmedLine) {
+                // Обычный абзац
+                if (inList) {
+                    html += `</${listType}>`;
+                    inList = false;
+                }
+                
+                // Обрабатываем отступы (табуляцию)
+                const indent = line.match(/^(\s*)/)[1];
+                const indentLevel = Math.floor(indent.length / 4); // Предполагаем табуляцию в 4 пробела
+                
+                let content = escapeHtml(trimmedLine);
+                
+                // Обрабатываем жирный текст (текст между **)
+                content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Обрабатываем курсив (текст между *)
+                content = content.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+                
+                // Добавляем отступы через CSS
+                if (indentLevel > 0) {
+                    content = `<span style="margin-left: ${indentLevel * 2}em;">${content}</span>`;
+                }
+                
+                html += `<p>${content}</p>`;
+            } else {
+                // Пустая строка - закрываем список если он был открыт
+                if (inList) {
+                    html += `</${listType}>`;
+                    inList = false;
+                }
+                // Добавляем пустой абзац для сохранения отступов
+                html += '<p><br></p>';
+            }
+        }
+        
+        // Закрываем список если он остался открытым
+        if (inList) {
+            html += `</${listType}>`;
+        }
+        
+        return html;
+    }
+    
+    // Функция для экранирования HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // Загрузка содержимого шаблона
@@ -2128,8 +2316,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Конвертируем текст в HTML для Word-редактора
-                    const htmlContent = data.content.replace(/\n/g, '<br>');
+                    // Конвертируем текст в HTML для Word-редактора с сохранением форматирования
+                    const htmlContent = convertTextToHtml(data.content);
                     updateDescriptionPreview(data.content);
                     
                     // Сохраняем HTML-версию для Word-редактора
@@ -2145,12 +2333,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (hiddenField) {
                         // Сохраняем HTML для передачи в форму (будет конвертирован в текст на сервере)
                         hiddenField.value = htmlContent;
-                        console.log('Шаблон сохранен в скрытое поле:', htmlContent.substring(0, 100) + '...');
+                        // console.log('Шаблон сохранен в скрытое поле:', htmlContent.substring(0, 100) + '...');
                     } else {
-                        console.error('Скрытое поле не найдено!');
+                        // console.error('Скрытое поле не найдено!');
                     }
                 } else {
-                    console.error('Ошибка загрузки шаблона: ' + data.message);
+                    // console.error('Ошибка загрузки шаблона: ' + data.message);
                     updateDescriptionPreview('');
                     
                     // Очищаем скрытое поле при ошибке
@@ -2164,7 +2352,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(applyDropdownStyles, 50);
             })
             .catch(error => {
-                console.error('Ошибка загрузки шаблона:', error);
+                // console.error('Ошибка загрузки шаблона:', error);
                 
                 // Очищаем скрытое поле при ошибке
                 const hiddenField = document.getElementById('claim-description-hidden');
@@ -2179,17 +2367,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для сохранения как пользовательский шаблон (из основной формы)
     window.saveAsUserTemplate = function() {
-        console.log('saveAsUserTemplate вызвана');
+        // console.log('saveAsUserTemplate вызвана');
         
         // Получаем содержимое из превью
         let content = '';
         const previewText = descriptionPreview.querySelector('p').textContent;
         if (previewText && previewText !== 'Описание не заполнено') {
             content = previewText.replace(/\n/g, '<br>');
-            console.log('Содержимое взято из превью');
+            // console.log('Содержимое взято из превью');
         }
         
-        console.log('Содержимое для сохранения:', content);
         
         if (!content || content.trim() === '') {
             return;
@@ -2236,7 +2423,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для сохранения как пользовательский шаблон (из модального окна)
     window.saveAsUserTemplateFromModal = function() {
-        console.log('saveAsUserTemplateFromModal вызвана');
+        // console.log('saveAsUserTemplateFromModal вызвана');
         
         // Получаем содержимое из Word-редактора
         const wordEditor = document.getElementById('word-editor');
@@ -2244,10 +2431,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (wordEditor && wordEditor.innerHTML.trim() !== '') {
             content = wordEditor.innerHTML;
-            console.log('Содержимое взято из Word-редактора');
+            // console.log('Содержимое взято из Word-редактора');
         }
         
-        console.log('Содержимое для сохранения:', content);
         
         if (!content || content.trim() === '') {
             return;
@@ -2301,7 +2487,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для подтверждения сохранения шаблона
     window.confirmSaveTemplate = function() {
-        console.log('confirmSaveTemplate вызвана');
+        // console.log('confirmSaveTemplate вызвана');
         
         const name = document.getElementById('template-name').value.trim();
         const description = document.getElementById('template-description').value.trim();
@@ -2310,7 +2496,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const type = document.getElementById('template-type-select').value;
         const content = document.getElementById('template-content').value;
 
-        console.log('Данные для сохранения:', {
+        // console.log('Данные для сохранения:', {
             name: name,
             description: description,
             type: type,
@@ -2354,8 +2540,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
+            // console.log('Response status:', response.status);
+            // console.log('Response headers:', response.headers);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -2364,7 +2550,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 return response.text().then(text => {
-                    console.error('Non-JSON response:', text);
+                    // console.error('Non-JSON response:', text);
                     throw new Error('Server returned non-JSON response');
                 });
             }
@@ -2372,7 +2558,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            console.log('Success response:', data);
+            // console.log('Success response:', data);
             if (data.success) {
                 // Перезагружаем список шаблонов
                 if (claimTypeSelect.value) {
@@ -2389,11 +2575,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Убираем фокус с кнопки
                 saveBtn.blur();
             } else {
-                console.error('Ошибка сохранения: ' + data.message);
+                // console.error('Ошибка сохранения: ' + data.message);
             }
         })
         .catch(error => {
-            console.error('Ошибка сохранения шаблона:', error);
+            // console.error('Ошибка сохранения шаблона:', error);
         })
         .finally(() => {
             // Восстанавливаем кнопку
@@ -2404,7 +2590,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для показа менеджера шаблонов (заглушка)
     window.showTemplateManager = function() {
-        console.log('Менеджер шаблонов будет добавлен в следующей версии');
+        // console.log('Менеджер шаблонов будет добавлен в следующей версии');
     };
 
     // Функция для создания нового шаблона
@@ -2478,18 +2664,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const purchaseId = document.getElementById('purchase_id');
             if (purchaseId && purchaseId.value) {
                 formData.append('purchase_id', purchaseId.value);
-                console.log('Purchase ID sent:', purchaseId.value);
+                // console.log('Purchase ID sent:', purchaseId.value);
             } else {
-                console.log('No purchase ID found');
+                // console.log('No purchase ID found');
             }
             
             // Добавляем тип претензии для формирования имени файла
             const claimType = document.getElementById('claim-type-select');
             if (claimType && claimType.value) {
                 formData.append('claim_type', claimType.value);
-                console.log('Claim type sent:', claimType.value);
+                // console.log('Claim type sent:', claimType.value);
             } else {
-                console.log('No claim type found');
+                // console.log('No claim type found');
             }
             
             // Добавляем CSRF токен
@@ -2536,7 +2722,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.URL.revokeObjectURL(url);
             
         } catch (error) {
-            console.error('Ошибка при создании DOCX файла:', error);
+            // console.error('Ошибка при создании DOCX файла:', error);
         } finally {
             // Восстанавливаем кнопку
             button.innerHTML = originalText;
@@ -2579,7 +2765,7 @@ ${plainText.replace(/\n/g, '\\par ').replace(/\t/g, '\\tab ')}
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
         
-        console.log('Документ скачан в формате RTF (совместимый с Word)');
+        // console.log('Документ скачан в формате RTF (совместимый с Word)');
     }
 
     // Обновляем функцию loadTemplate для показа кнопки сохранения

@@ -111,30 +111,47 @@ class ClaimController extends Controller
      */
     public function actionCreate()
     {
-        $model = new Claim();
+        // Проверяем, есть ли уже черновик претензии для этой покупки
+        $purchaseId = Yii::$app->request->post('Claim')['purchase_id'] ?? null;
+        $existingClaimId = Yii::$app->request->post('existing_claim_id');
+        $existingClaim = null;
+        
+        // Сначала проверяем по ID из скрытого поля
+        if ($existingClaimId) {
+            $existingClaim = Claim::find()
+                ->where(['id' => $existingClaimId, 'user_id' => Yii::$app->user->id])
+                ->one();
+        }
+        
+        // Если не найден по ID, ищем по purchase_id
+        if (!$existingClaim && $purchaseId) {
+            $existingClaim = Claim::find()
+                ->where(['purchase_id' => $purchaseId, 'user_id' => Yii::$app->user->id])
+                ->andWhere(['status' => Claim::STATUS_PENDING])
+                ->one();
+        }
+        
+        if ($existingClaim) {
+            // Обновляем существующий черновик
+            $model = $existingClaim;
+        } else {
+            // Создаем новую претензию
+            $model = new Claim();
+        }
 
         if ($model->load(Yii::$app->request->post())) {
-            // Отладочная информация
-            $postData = Yii::$app->request->post();
-            Yii::info('POST данные при создании претензии: ' . json_encode($postData), 'claim');
-            Yii::info('Описание претензии в POST: ' . ($postData['Claim']['description'] ?? 'НЕТ'), 'claim');
-            
             // Обрабатываем HTML-теги в описании
             if (!empty($model->description)) {
                 // Сохраняем HTML с форматированием, но очищаем от опасных тегов
                 $model->description = $this->sanitizeHtml($model->description);
-                Yii::info('Описание после очистки HTML: ' . $model->description, 'claim');
             }
             
             $model->user_id = Yii::$app->user->id;
             $model->claim_date = time();
             
             if ($model->save()) {
-                Yii::info('Претензия сохранена с описанием: ' . ($model->description ?? 'НЕТ'), 'claim');
                 Yii::$app->session->setFlash('success', 'Претензия успешно создана.');
                 return $this->redirect(['view', 'id' => $model->id]);
-            } else {
-                Yii::error('Ошибки при сохранении претензии: ' . json_encode($model->errors), 'claim');
             }
         }
 
@@ -312,7 +329,7 @@ class ClaimController extends Controller
             $id = substr($templateId, 8); // Убираем 'default_'
             $template = ClaimTemplate::findOne($id);
             if ($template) {
-                $content = $template->fillTemplate($purchase);
+                $content = $template->fillTemplate($purchase, null);
             }
         } elseif (strpos($templateId, 'user_') === 0) {
             // Пользовательский шаблон (только для авторизованных пользователей)
@@ -320,7 +337,7 @@ class ClaimController extends Controller
                 $id = substr($templateId, 5); // Убираем 'user_'
                 $userTemplate = UserClaimTemplate::findOne($id);
                 if ($userTemplate && $userTemplate->user_id == Yii::$app->user->id) {
-                    $content = $userTemplate->fillTemplate($purchase);
+                    $content = $userTemplate->fillTemplate($purchase, null);
                 }
             }
         }
@@ -929,8 +946,6 @@ class ClaimController extends Controller
         $repairDocumentDate = Yii::$app->request->post('repair_document_date');
         $defectDescription = Yii::$app->request->post('defect_description');
         
-        Yii::info('Сохранение информации о ремонте для претензии: ' . $claimId, 'claim');
-        
         if (!$claimId) {
             return ['success' => false, 'message' => 'Не указан ID претензии'];
         }
@@ -946,6 +961,7 @@ class ClaimController extends Controller
         }
         
         try {
+        
         $claim->was_repaired_officially = (bool)$wasRepairedOfficially;
         $claim->repair_document_description = $repairDocumentDescription;
         $claim->repair_document_date = $repairDocumentDate;
@@ -958,10 +974,8 @@ class ClaimController extends Controller
         }
             
             if ($claim->save()) {
-                Yii::info('Информация о ремонте сохранена успешно', 'claim');
                 return ['success' => true, 'message' => 'Информация о ремонте сохранена'];
             } else {
-                Yii::error('Ошибки валидации при сохранении информации о ремонте: ' . implode(', ', $claim->getFirstErrors()), 'claim');
                 return ['success' => false, 'message' => 'Ошибка при сохранении информации о ремонте'];
             }
         } catch (\Exception $e) {
@@ -984,8 +998,6 @@ class ClaimController extends Controller
         $defectDescription = Yii::$app->request->post('defect_description');
         $defectSimilarity = Yii::$app->request->post('defect_similarity');
         
-        Yii::info('Сохранение информации о доказательствах недостатка для претензии: ' . $claimId, 'claim');
-        
         if (!$claimId) {
             return ['success' => false, 'message' => 'Не указан ID претензии'];
         }
@@ -1001,6 +1013,7 @@ class ClaimController extends Controller
         }
         
         try {
+            
             $claim->defect_proof_type = $defectProofType;
             $claim->defect_proof_document_description = $defectProofDocumentDescription;
             $claim->defect_proof_document_date = $defectProofDocumentDate;
@@ -1012,10 +1025,8 @@ class ClaimController extends Controller
             }
             
             if ($claim->save()) {
-                Yii::info('Информация о доказательствах недостатка сохранена успешно', 'claim');
                 return ['success' => true, 'message' => 'Информация о доказательствах недостатка сохранена'];
             } else {
-                Yii::error('Ошибки валидации при сохранении информации о доказательствах недостатка: ' . implode(', ', $claim->getFirstErrors()), 'claim');
                 return ['success' => false, 'message' => 'Ошибка при сохранении информации о доказательствах недостатка'];
             }
         } catch (\Exception $e) {

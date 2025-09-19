@@ -129,11 +129,12 @@ class UserClaimTemplate extends ActiveRecord
     }
 
     /**
-     * Заполнить шаблон данными покупки
+     * Заполнить шаблон данными покупки и претензии
      * @param Purchase $purchase
+     * @param Claim|null $claim
      * @return string
      */
-    public function fillTemplate($purchase)
+    public function fillTemplate($purchase, $claim = null)
     {
         $content = $this->template_content;
         
@@ -169,23 +170,47 @@ class UserClaimTemplate extends ActiveRecord
         $content = str_replace('{PURCHASE_WARRANTY}', $purchase->warranty_period ? $purchase->warranty_period . ' дней' : '', $content);
         
         // Информация о ремонте
-        $content = str_replace('{WAS_REPAIRED_OFFICIALLY}', $purchase->getRepairStatusLabel(), $content);
-        $content = str_replace('{REPAIR_DOCUMENT_DESCRIPTION}', $purchase->repair_document_description ?: '', $content);
-        $content = str_replace('{REPAIR_DOCUMENT_DATE}', $purchase->repair_document_date ? Yii::$app->formatter->asDate($purchase->repair_document_date, 'php:d.m.Y') : '', $content);
+        if ($claim) {
+            $content = str_replace('{WAS_REPAIRED_OFFICIALLY}', $claim->getRepairStatusLabel(), $content);
+            $content = str_replace('{REPAIR_DOCUMENT_DESCRIPTION}', $claim->repair_document_description ?: '', $content);
+            $content = str_replace('{REPAIR_DOCUMENT_DATE}', $claim->repair_document_date ? Yii::$app->formatter->asDate($claim->repair_document_date, 'php:d.m.Y') : '', $content);
+            
+            // Информация о доказательствах недостатка
+            $content = str_replace('{DEFECT_PROOF_TYPE}', $claim->getDefectProofTypeLabel(), $content);
+            $content = str_replace('{DEFECT_PROOF_DOCUMENT_DESCRIPTION}', $claim->defect_proof_document_description ?: '', $content);
+            $content = str_replace('{DEFECT_PROOF_DOCUMENT_DATE}', $claim->defect_proof_document_date ? Yii::$app->formatter->asDate($claim->defect_proof_document_date, 'php:d.m.Y') : '', $content);
+            
+            // Различные типы описаний недостатков
+            $content = str_replace('{REPAIR_DEFECT_DESCRIPTION}', $claim->repair_defect_description ?: '', $content);
+            $content = str_replace('{CURRENT_DEFECT_DESCRIPTION}', $claim->current_defect_description ?: '', $content);
+            $content = str_replace('{EXPERTISE_DEFECT_DESCRIPTION}', $claim->expertise_defect_description ?: '', $content);
+        } else {
+            // Fallback для случаев, когда claim не передан
+            $content = str_replace('{WAS_REPAIRED_OFFICIALLY}', 'Не указано', $content);
+            $content = str_replace('{REPAIR_DOCUMENT_DESCRIPTION}', '', $content);
+            $content = str_replace('{REPAIR_DOCUMENT_DATE}', '', $content);
+            $content = str_replace('{DEFECT_PROOF_TYPE}', 'Не указано', $content);
+            $content = str_replace('{DEFECT_PROOF_DOCUMENT_DESCRIPTION}', '', $content);
+            $content = str_replace('{DEFECT_PROOF_DOCUMENT_DATE}', '', $content);
+            $content = str_replace('{REPAIR_DEFECT_DESCRIPTION}', '', $content);
+            $content = str_replace('{CURRENT_DEFECT_DESCRIPTION}', '', $content);
+            $content = str_replace('{EXPERTISE_DEFECT_DESCRIPTION}', '', $content);
+        }
+        // Поле general_defect_description больше не существует, используем пустую строку
+        $content = str_replace('{GENERAL_DEFECT_DESCRIPTION}', '', $content);
         
-        // Информация о доказательствах недостатка
-        $content = str_replace('{DEFECT_PROOF_TYPE}', $purchase->getDefectProofTypeLabel(), $content);
-        $content = str_replace('{DEFECT_PROOF_DOCUMENT_DESCRIPTION}', $purchase->defect_proof_document_description ?: '', $content);
-        $content = str_replace('{DEFECT_PROOF_DOCUMENT_DATE}', $purchase->defect_proof_document_date ? Yii::$app->formatter->asDate($purchase->defect_proof_document_date, 'php:d.m.Y') : '', $content);
-        
-        // Различные типы описаний недостатков
-        $content = str_replace('{REPAIR_DEFECT_DESCRIPTION}', $purchase->repair_defect_description ?: '', $content);
-        $content = str_replace('{CURRENT_DEFECT_DESCRIPTION}', $purchase->current_defect_description ?: '', $content);
-        $content = str_replace('{EXPERTISE_DEFECT_DESCRIPTION}', $purchase->expertise_defect_description ?: '', $content);
-        $content = str_replace('{GENERAL_DEFECT_DESCRIPTION}', $purchase->general_defect_description ?: '', $content);
-        
-        // Обратная совместимость
-        $content = str_replace('{DEFECT_DESCRIPTION}', $purchase->general_defect_description ?: '', $content);
+        // Обратная совместимость - используем описание из претензии, если доступно
+        $defectDescription = '';
+        if ($claim) {
+            if ($claim->current_defect_description) {
+                $defectDescription = $claim->current_defect_description;
+            } elseif ($claim->repair_defect_description) {
+                $defectDescription = $claim->repair_defect_description;
+            } elseif ($claim->expertise_defect_description) {
+                $defectDescription = $claim->expertise_defect_description;
+            }
+        }
+        $content = str_replace('{DEFECT_DESCRIPTION}', $defectDescription, $content);
         
         // Текущая дата
         $content = str_replace('{CURRENT_DATE}', Yii::$app->formatter->asDate(time(), 'php:d.m.Y'), $content);
