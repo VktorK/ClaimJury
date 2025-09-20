@@ -12,6 +12,9 @@ use yii\helpers\Url;
  *
  * @property int $id
  * @property string $title
+ * @property string $slug
+ * @property string $description
+ * @property int $status
  * @property int $created_at
  * @property int $updated_at
  *
@@ -19,6 +22,8 @@ use yii\helpers\Url;
  */
 class Category extends ActiveRecord
 {
+    const STATUS_INACTIVE = 0;
+    const STATUS_ACTIVE = 1;
     /**
      * {@inheritdoc}
      */
@@ -43,8 +48,12 @@ class Category extends ActiveRecord
     public function rules()
     {
         return [
-            [['title'], 'required'],
-            [['title'], 'string', 'max' => 255],
+            [['title', 'slug'], 'required'],
+            [['title', 'slug'], 'string', 'max' => 255],
+            [['description'], 'string'],
+            [['status'], 'integer'],
+            [['slug'], 'unique'],
+            [['status'], 'default', 'value' => self::STATUS_ACTIVE],
         ];
     }
 
@@ -56,6 +65,9 @@ class Category extends ActiveRecord
         return [
             'id' => 'ID',
             'title' => 'Название',
+            'slug' => 'URL-адрес',
+            'description' => 'Описание',
+            'status' => 'Статус',
             'created_at' => 'Дата создания',
             'updated_at' => 'Дата обновления',
         ];
@@ -83,5 +95,21 @@ class Category extends ActiveRecord
     public function getFormattedCreatedDate()
     {
         return date('d.m.Y H:i', $this->created_at);
+    }
+
+    /**
+     * Получить текст статуса
+     */
+    public function getStatusText()
+    {
+        return $this->status == self::STATUS_ACTIVE ? 'Активна' : 'Неактивна';
+    }
+
+    /**
+     * Получить активные категории
+     */
+    public static function getActiveCategories()
+    {
+        return static::find()->where(['status' => self::STATUS_ACTIVE])->all();
     }
 }

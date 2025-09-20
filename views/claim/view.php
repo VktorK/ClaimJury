@@ -206,6 +206,10 @@ $this->params['breadcrumbs'][] = $this->title;
                             ]) ?>
                         <?php endif; ?>
                         
+                        <button type="button" class="btn btn-primary btn-block compose-btn" onclick="openComposeModal()">
+                            <i class="fas fa-file-alt"></i> Скомпоновать претензию
+                        </button>
+                        
                         <?php if ($model->canDelete()): ?>
                             <?= Html::a('<i class="fas fa-trash"></i> Удалить', ['delete', 'id' => $model->id], [
                                 'class' => 'btn btn-danger btn-block',
@@ -393,6 +397,65 @@ $this->params['breadcrumbs'][] = $this->title;
                 </button>
                 <button type="button" class="btn btn-success" onclick="saveClaimText()">
                     <i class="fas fa-save"></i> Сохранить изменения
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для компоновки претензии с описью вложения -->
+<div class="modal fade" id="composeModal" tabindex="-1" aria-labelledby="composeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="composeModalLabel">
+                    <i class="fas fa-file-alt"></i> Скомпоновать претензию
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="compose-form">
+                    <div class="form-section">
+                        <h6><i class="fas fa-list"></i> Опись вложения</h6>
+                        <p class="text-muted">Укажите предметы, которые будут отправлены вместе с претензией</p>
+                        
+                        <div id="inventory-items">
+                            <div class="inventory-item">
+                                <div class="inventory-fields">
+                                    <div class="field-group">
+                                        <label class="form-label">Описание предмета</label>
+                                        <input type="text" class="form-control" name="item_description[]" placeholder="Например: Документы, чеки, товар">
+                                    </div>
+                                    <div class="field-group">
+                                        <label class="form-label">Количество</label>
+                                        <input type="number" class="form-control" name="item_quantity[]" min="1" value="1">
+                                    </div>
+                                    <div class="field-group">
+                                        <label class="form-label">Ценность (руб.)</label>
+                                        <input type="number" class="form-control" name="item_value[]" min="0" step="0.01" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div class="item-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeInventoryItem(this)" style="display: none;">
+                                        <i class="fas fa-trash"></i> Удалить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                                <div class="add-item-section">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addInventoryItem()">
+                                        <i class="fas fa-plus"></i> Добавить предмет
+                                    </button>
+                                </div>
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="generateComposedClaim()">
+                    <i class="fas fa-file-word"></i> Скомпоновать и скачать
                 </button>
             </div>
         </div>
@@ -624,6 +687,141 @@ $this->params['breadcrumbs'][] = $this->title;
 .purchases-btn {
     text-transform: none !important;
     font-weight: 500 !important;
+}
+
+.compose-btn {
+    text-transform: none !important;
+    font-weight: 600 !important;
+}
+
+/* Стили для модального окна компоновки претензии */
+.compose-form {
+    padding: 20px 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.form-section h6 {
+    color: #1f2937;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-section h6 i {
+    color: #f59e0b;
+}
+
+.inventory-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.inventory-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.field-group {
+    width: 100%;
+}
+
+.field-group:first-child {
+    width: 100%;
+}
+
+.field-group:nth-child(2),
+.field-group:nth-child(3) {
+    width: 100%;
+    max-width: 200px;
+}
+
+.inventory-item .form-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.inventory-item .form-control {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.inventory-item .form-control:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+}
+
+/* Специальные стили для полей количества и ценности */
+.field-group:nth-child(2) .form-control,
+.field-group:nth-child(3) .form-control {
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+}
+
+.field-group:nth-child(3) .form-control {
+    background-color: #f8f9fa;
+}
+
+.item-actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.add-item-section {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.add-item-section .btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.text-muted {
+    color: #6b7280 !important;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+/* Адаптивность для модального окна */
+@media (max-width: 768px) {
+    .inventory-fields {
+        gap: 12px;
+    }
+    
+    .field-group:nth-child(2),
+    .field-group:nth-child(3) {
+        max-width: 100%;
+    }
+    
+    .field-group:nth-child(2) .form-control,
+    .field-group:nth-child(3) .form-control {
+        text-align: left;
+    }
 }
 
 .stats-grid {
@@ -2044,5 +2242,137 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Функция для открытия модального окна компоновки претензии
+function openComposeModal() {
+    const modal = new bootstrap.Modal(document.getElementById('composeModal'));
+    modal.show();
+}
+
+
+
+// Функция для добавления нового предмета в опись
+function addInventoryItem() {
+    const container = document.getElementById('inventory-items');
+    const newItem = document.createElement('div');
+    newItem.className = 'inventory-item';
+    newItem.innerHTML = `
+        <div class="inventory-fields">
+            <div class="field-group">
+                <label class="form-label">Описание предмета</label>
+                <input type="text" class="form-control" name="item_description[]" placeholder="Например: Документы, чеки, товар">
+            </div>
+            <div class="field-group">
+                <label class="form-label">Количество</label>
+                <input type="number" class="form-control" name="item_quantity[]" min="1" value="1">
+            </div>
+            <div class="field-group">
+                <label class="form-label">Ценность (руб.)</label>
+                <input type="number" class="form-control" name="item_value[]" min="0" step="0.01" placeholder="0.00">
+            </div>
+        </div>
+        <div class="item-actions">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeInventoryItem(this)">
+                <i class="fas fa-trash"></i> Удалить
+            </button>
+        </div>
+    `;
+    container.appendChild(newItem);
+    
+    // Показываем кнопки удаления для всех предметов, если их больше одного
+    updateRemoveButtons();
+}
+
+// Функция для удаления предмета из описи
+function removeInventoryItem(button) {
+    const item = button.closest('.inventory-item');
+    item.remove();
+    updateRemoveButtons();
+}
+
+// Функция для обновления видимости кнопок удаления
+function updateRemoveButtons() {
+    const items = document.querySelectorAll('.inventory-item');
+    const removeButtons = document.querySelectorAll('.item-actions .btn-outline-danger');
+    
+    if (items.length > 1) {
+        removeButtons.forEach(btn => btn.style.display = 'inline-block');
+    } else {
+        removeButtons.forEach(btn => btn.style.display = 'none');
+    }
+}
+
+// Функция для генерации скомпонованной претензии
+function generateComposedClaim() {
+    const items = [];
+    const itemDescriptions = document.querySelectorAll('input[name="item_description[]"]');
+    const itemQuantities = document.querySelectorAll('input[name="item_quantity[]"]');
+    const itemValues = document.querySelectorAll('input[name="item_value[]"]');
+    
+    // Собираем данные о предметах
+    for (let i = 0; i < itemDescriptions.length; i++) {
+        const description = itemDescriptions[i].value.trim();
+        const quantity = parseInt(itemQuantities[i].value) || 1;
+        const value = parseFloat(itemValues[i].value) || 0;
+        
+        if (description) {
+            items.push({
+                description: description,
+                quantity: quantity,
+                value: value
+            });
+        }
+    }
+    
+    if (items.length === 0) {
+        alert('Пожалуйста, укажите хотя бы один предмет в описи вложения');
+        return;
+    }
+    
+    // Отправляем данные на сервер для генерации документа
+    const formData = new FormData();
+    formData.append('claim_id', <?= $model->id ?>);
+    formData.append('items', JSON.stringify(items));
+    formData.append('_csrf', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    
+    // Показываем индикатор загрузки
+    const generateBtn = document.querySelector('.modal-footer .btn-primary');
+    const originalText = generateBtn.innerHTML;
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Генерация...';
+    generateBtn.disabled = true;
+    
+    fetch('/claim/generate-composed-docx', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        // Создаем ссылку для скачивания
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Претензия_<?= $model->id ?>_с_описью.docx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        // Закрываем модальное окно
+        const modal = bootstrap.Modal.getInstance(document.getElementById('composeModal'));
+        modal.hide();
+    })
+    .catch(error => {
+        console.error('Ошибка при генерации документа:', error);
+        alert('Ошибка при генерации документа. Попробуйте еще раз.');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        generateBtn.innerHTML = originalText;
+        generateBtn.disabled = false;
+    });
+}
 </script>
 

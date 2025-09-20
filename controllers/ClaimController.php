@@ -10,6 +10,7 @@ use app\models\ClaimTemplate;
 use app\models\Package;
 use app\models\UserClaimTemplate;
 use app\models\Purchase;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -30,7 +31,7 @@ class ClaimController extends Controller
     /**
      * {@inheritdoc}
      */
-    public function behaviors()
+    public function behaviors(): array
     {
         return [
             'access' => [
@@ -55,7 +56,7 @@ class ClaimController extends Controller
                     'delete-user-template' => ['POST'],
                     'toggle-favorite-template' => ['POST'],
                     'generate-docx' => ['POST'],
-                    'update-template' => ['POST'],
+                    'generate-composed-docx' => ['POST'],
                 'save-repair-info' => ['POST'],
                 'save-defect-proof-info' => ['POST'],
                 'update-template' => ['POST'],
@@ -251,7 +252,7 @@ class ClaimController extends Controller
 
     /**
      * Получить шаблоны претензий по типу (AJAX)
-     * @return Response
+     * @return array
      */
     public function actionGetTemplates()
     {
@@ -297,7 +298,7 @@ class ClaimController extends Controller
 
     /**
      * Получить заполненный шаблон претензии (AJAX)
-     * @return Response
+     * @return array
      */
     public function actionGetTemplateContent()
     {
@@ -310,7 +311,7 @@ class ClaimController extends Controller
             return ['success' => false, 'message' => 'Не указаны необходимые параметры'];
         }
 
-        $purchase = \app\models\Purchase::findOne($purchaseId);
+        $purchase = Purchase::findOne($purchaseId);
         if (!$purchase) {
             return ['success' => false, 'message' => 'Покупка не найдена'];
         }
@@ -361,7 +362,7 @@ class ClaimController extends Controller
         $claimType = Yii::$app->request->post('claim_type');
         
         if (!$content) {
-            throw new \yii\web\BadRequestHttpException('Содержимое не указано');
+            throw new BadRequestHttpException('Содержимое не указано');
         }
         
         // Получаем данные о покупке для формирования имени файла
@@ -369,12 +370,8 @@ class ClaimController extends Controller
         $buyerName = '';
         $sellerName = '';
         
-        // Логируем для отладки
-        Yii::info("Purchase ID: " . $purchaseId, 'claim');
-        Yii::info("Claim Type: " . $claimType, 'claim');
-        
         if ($purchaseId) {
-            $purchase = \app\models\Purchase::findOne($purchaseId);
+            $purchase = Purchase::findOne($purchaseId);
             if ($purchase) {
                 Yii::info("Purchase found: " . $purchase->id, 'claim');
                 
@@ -383,23 +380,17 @@ class ClaimController extends Controller
                     $buyerName = trim($purchase->buyer->firstName . ' ' . 
                                     $purchase->buyer->middleName . ' ' . 
                                     $purchase->buyer->lastName);
-                    Yii::info("Buyer name before transliteration: " . $buyerName, 'claim');
-                    
+
                     // Транслитерируем в английский и заменяем пробелы на подчеркивания
                     $buyerName = $this->transliterate($buyerName);
-                    Yii::info("Buyer name after transliteration: " . $buyerName, 'claim');
-                } else {
-                    Yii::info("No buyer found for purchase", 'claim');
                 }
                 
                 // Получаем данные продавца
                 if ($purchase->seller) {
                     $sellerName = $purchase->seller->title;
-                    Yii::info("Seller name before transliteration: " . $sellerName, 'claim');
-                    
+
                     // Транслитерируем в английский и убираем спецсимволы
                     $sellerName = $this->transliterate($sellerName);
-                    Yii::info("Seller name after transliteration: " . $sellerName, 'claim');
                 } else {
                     Yii::info("No seller found for purchase", 'claim');
                 }
@@ -1312,6 +1303,107 @@ class ClaimController extends Controller
         } catch (\Exception $e) {
             return ['error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Компоновка претензии
+     * @param int $id
+     * @return string
+     * @throws NotFoundHttpException
+     */
+    public function actionCompose($id)
+    {
+        $model = $this->findModel($id);
+        
+        // Проверяем права доступа
+        if ($model->user_id !== Yii::$app->user->id) {
+            throw new ForbiddenHttpException('У вас нет прав для просмотра этой претензии');
+        }
+        
+        return $this->render('compose', [
+            'model' => $model,
+        ]);
+    }
+
+    /**
+     * Генерация скомпонованной претензии с описью вложения
+     * @param int $id
+     * @return Response
+     * @throws NotFoundHttpException
+     */
+    public function actionGenerateComposedDocx($id)
+    {
+        $model = $this->findModel($id);
+        
+        // Проверяем права доступа
+        if ($model->user_id !== Yii::$app->user->id) {
+            throw new ForbiddenHttpException('У вас нет прав для генерации документа этой претензии');
+        }
+        
+        // Получаем данные из POST
+        $itemsJson = Yii::$app->request->post('items');
+        
+        if (!$itemsJson) {
+            throw new BadRequestHttpException('Не указаны предметы для описи вложения');
+        }
+        
+        $items = json_decode($itemsJson, true);
+        if (!$items || !is_array($items)) {
+            throw new BadRequestHttpException('Некорректные данные описи вложения');
+        }
+        
+        // Генерируем документ
+        $filename = 'Претензия_' . $model->id . '_с_описью.docx';
+        
+        // Здесь должна быть логика генерации DOCX файла с описью
+        // Пока что возвращаем простой текстовый файл
+        $content = $this->generateComposedClaimContent($model, $items);
+        
+        Yii::$app->response->format = Response::FORMAT_RAW;
+        Yii::$app->response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        Yii::$app->response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        Yii::$app->response->data = $content;
+        
+        return Yii::$app->response;
+    }
+    
+    /**
+     * Генерация содержимого скомпонованной претензии
+     * @param Claim $model
+     * @param array $items
+     * @return string
+     */
+    private function generateComposedClaimContent($model, $items)
+    {
+        $content = "ПРЕТЕНЗИЯ\n";
+        $content .= "№ " . $model->id . " от " . date('d.m.Y', $model->claim_date) . "\n\n";
+        
+        $content .= "ПОКУПАТЕЛЬ: " . ($model->user->username ?? 'Не указан') . "\n";
+        if ($model->purchase) {
+            $content .= "ТОВАР: " . ($model->purchase->product->title ?? 'Не указан') . "\n";
+            $content .= "ПРОДАВЕЦ: " . ($model->purchase->seller->title ?? 'Не указан') . "\n";
+            $content .= "СУММА ПОКУПКИ: " . Yii::$app->formatter->asCurrency($model->purchase->amount, $model->purchase->currency) . "\n";
+        }
+        $content .= "\n";
+        
+        if ($model->description) {
+            $content .= "ТЕКСТ ПРЕТЕНЗИИ:\n";
+            $content .= strip_tags($model->description) . "\n\n";
+        }
+        
+        $content .= "ОПИСЬ ВЛОЖЕНИЯ:\n";
+        $totalValue = 0;
+        foreach ($items as $index => $item) {
+            $content .= ($index + 1) . ". " . $item['description'] . " - ";
+            $content .= "количество: " . $item['quantity'] . ", ";
+            $content .= "ценность: " . number_format($item['value'], 2) . " руб.\n";
+            $totalValue += $item['value'] * $item['quantity'];
+        }
+        $content .= "\nОбщая ценность вложения: " . number_format($totalValue, 2) . " руб.\n\n";
+        
+        $content .= "Дата составления: " . date('d.m.Y H:i') . "\n";
+        
+        return $content;
     }
 
 }

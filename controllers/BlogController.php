@@ -96,7 +96,7 @@ class BlogController extends Controller
     /**
      * Статьи по категории
      */
-    public function actionCategory($slug)
+    public function actionCategory($slug): string
     {
         $category = Category::find()->where(['slug' => $slug, 'status' => Category::STATUS_ACTIVE])->one();
         
